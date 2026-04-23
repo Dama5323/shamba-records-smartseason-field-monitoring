@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'rest_framework',
     'corsheaders',
+    'drf_spectacular',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
@@ -133,6 +134,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Media files configuration
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 AUTH_USER_MODEL = 'accounts.User'
 
 REST_FRAMEWORK = {
@@ -142,6 +147,47 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',  
+}
+
+# Spectacular Settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'SmartSeason Field Monitoring API',
+    'DESCRIPTION': '''
+    # SmartSeason API Documentation
+    
+    SmartSeason is a field monitoring system that helps track crop progress across multiple fields.
+    
+    ## Authentication
+    All endpoints (except login/register) require JWT authentication.
+    Include the token in the Authorization header: `Bearer <your_access_token>`
+    
+    ## Roles
+    - **Admin**: Full access to all fields and users
+    - **Field Agent**: Access only to assigned fields
+    
+    ## Features
+    - User registration and authentication
+    - Field management with crop lifecycle tracking
+    - Observations and notes
+    - Dashboard statistics
+    - At-risk field detection
+    ''',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'persistAuthorization': True,
+        'displayOperationId': True,
+        'displayRequestDuration': True,
+    },
+    'TAGS': [
+        {'name': 'Authentication', 'description': 'Login, registration, and email verification'},
+        {'name': 'Fields', 'description': 'Field management operations'},
+        {'name': 'Observations', 'description': 'Field observations and notes'},
+        {'name': 'Dashboard', 'description': 'Statistics and dashboard data'},
+    ],
 }
 
 # Simple JWT settings
@@ -160,10 +206,9 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # Allauth settings
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Require email verification
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_LOGIN_METHODS = {'email'}  
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*'] 
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_EMAIL_SUBJECT_PREFIX = '[SmartSeason] '
 LOGIN_URL = '/api/auth/login/'
 ACCOUNT_CONFIRM_EMAIL_ON_GET = True

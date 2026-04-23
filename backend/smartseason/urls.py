@@ -16,15 +16,51 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.http import JsonResponse
+from django.conf import settings
+from django.conf.urls.static import static
+from django.http import HttpResponse
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 def home(request):
-    return JsonResponse({
-        "message": "SmartSeason API is running 🚀"
-    })
+    return HttpResponse("""
+    <html>
+        <head><title>SmartSeason API</title></head>
+        <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+            <h1>🌾 SmartSeason Field Monitoring API</h1>
+            <p>Welcome to the SmartSeason API!</p>
+            <p>
+                <a href="/api/docs/" style="background: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                    📚 View API Documentation (Swagger)
+                </a>
+            </p>
+            <p>
+                <a href="/api/redoc/" style="background: #2196F3; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                    📖 View ReDoc Documentation
+                </a>
+            </p>
+            <p>
+                <a href="/admin/" style="background: #FF9800; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                    🔧 Admin Panel
+                </a>
+            </p>
+        </body>
+    </html>
+    """)
 
 urlpatterns = [
     path('', home),
     path('admin/', admin.site.urls),
+    
+    # API Documentation
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    
+    # API Endpoints
     path('api/auth/', include('accounts.urls')),
+    path('api/', include('fields.urls')),
 ]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
