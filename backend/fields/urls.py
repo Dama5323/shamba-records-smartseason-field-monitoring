@@ -10,6 +10,7 @@ router = DefaultRouter()
 router.register(r'fields', FieldViewSet, basename='field')
 router.register(r'observations', ObservationViewSet, basename='observation')
 
+
 urlpatterns = [
     path('', include(router.urls)),
     

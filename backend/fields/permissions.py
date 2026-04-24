@@ -1,4 +1,5 @@
 from rest_framework import permissions
+from .models import Field, Observation  # Add this line
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     """

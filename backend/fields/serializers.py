@@ -86,3 +86,15 @@ class FieldListSerializer(serializers.ModelSerializer):
             'id', 'name', 'crop_type', 'planting_date', 'current_stage',
             'assigned_to_name', 'status', 'updated_at'
         ]
+
+from rest_framework import serializers
+from .models import Field, Observation
+
+class FieldSerializer(serializers.ModelSerializer):
+    planting_date = serializers.DateField(format='%Y-%m-%d', required=False, allow_null=True)
+    created_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    updated_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    
+    class Meta:
+        model = Field
+        fields = '__all__'

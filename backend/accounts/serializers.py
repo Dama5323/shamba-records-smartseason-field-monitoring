@@ -3,12 +3,13 @@ from .models import User
 import re
 
 class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True, min_length=8)
+    
     class Meta:
         model = User
-        fields = ['id', 'email', 'username', 'role', 'first_name', 'last_name', 
+        fields = ['id', 'email', 'username', 'password', 'role', 'first_name', 'last_name', 
                   'phone_number', 'location', 'farm_name']
         extra_kwargs = {
-            'password': {'write_only': True},
             'email': {'required': True},
             'username': {'required': True},
             'phone_number': {'required': False, 'allow_null': True},
@@ -18,11 +19,9 @@ class UserSerializer(serializers.ModelSerializer):
 
     def validate_email(self, value):
         """Check if email is Gmail and not already registered"""
-        # Check if it's a Gmail address
         if not value.endswith('@gmail.com'):
             raise serializers.ValidationError("Only Gmail addresses are allowed to register.")
         
-        # Check if email already exists
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("Email already registered. Please use a different email.")
         
@@ -41,9 +40,8 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        password = validated_data.pop('password', None)
-        user = super().create(validated_data)
-        if password:
-            user.set_password(password)
-            user.save()
+        password = validated_data.pop('password')
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
         return user

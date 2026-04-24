@@ -16,60 +16,74 @@ import django.db.models as models  # Add this for Q objects
 from .serializers import UserSerializer
 from .email_utils import send_verification_email, send_welcome_email
 from .models import User
+import time
+
 
 
 class RegisterView(APIView):
     permission_classes = []
     
-    @extend_schema(
-        summary="Register a new user",
-        description="Create a new user account. Only Gmail addresses are allowed.",
-        request={
-            'application/json': {
-                'type': 'object',
-                'properties': {
-                    'email': {'type': 'string', 'format': 'email', 'example': 'user@gmail.com'},
-                    'username': {'type': 'string', 'example': 'john_doe'},
-                    'password': {'type': 'string', 'format': 'password', 'example': 'SecurePass123'},
-                    'role': {'type': 'string', 'enum': ['admin', 'agent'], 'example': 'agent'},
-                    'phone_number': {'type': 'string', 'example': '+254712345678'},
-                    'location': {'type': 'string', 'example': 'Nairobi, Kenya'},
-                    'farm_name': {'type': 'string', 'example': 'Green Acres Farm'},
-                },
-                'required': ['email', 'username', 'password']
-            }
-        },
-        responses={
-            201: OpenApiResponse(description="User created successfully"),
-            400: OpenApiResponse(description="Validation error"),
-            500: OpenApiResponse(description="Server error"),
-        },
-        tags=["Authentication"]
-    )
     def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            
-            # Set user as inactive until email verification
-            user.is_active = False
-            user.save()
-            
-            # Send verification email
-            try:
-                send_verification_email(user, request)
-                return Response({
-                    'message': 'Registration successful! Please check your email to verify your account.',
-                    'email': user.email
-                }, status=status.HTTP_201_CREATED)
-            except Exception as e:
-                # If email fails, delete the user
-                user.delete()
-                return Response({
-                    'error': 'Could not send verification email. Please try again.'
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        print("=== REGISTRATION ATTEMPT ===")
+        print("Request data:", request.data)
         
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Get data from request
+        email = request.data.get('email')
+        password = request.data.get('password')
+        role = request.data.get('role', 'agent')
+        phone_number = request.data.get('phone_number', '')
+        location = request.data.get('location', '')
+        farm_name = request.data.get('farm_name', '')
+        first_name = request.data.get('first_name', '')
+        last_name = request.data.get('last_name', '')
+        
+        # Generate username from email (remove @gmail.com part)
+        username = email.split('@')[0] if email else f"user_{int(time.time())}"
+        
+        # Check if user exists
+        if User.objects.filter(email=email).exists():
+            return Response({'email': ['Email already exists']}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if User.objects.filter(username=username).exists():
+            # If username exists, add a random number
+            username = f"{username}_{User.objects.count()}"
+        
+        # Convert role from FIELD_AGENT to agent (lowercase)
+        if role == 'FIELD_AGENT':
+            role = 'agent'
+        elif role == 'ADMIN':
+            role = 'admin'
+        
+        # Create user with set_password (this hashes the password)
+        user = User(
+            email=email,
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            role=role,
+            phone_number=phone_number,
+            location=location,
+            farm_name=farm_name
+        )
+        user.set_password(password)  # This properly hashes the password
+        user.is_active = True
+        user.is_email_verified = True
+        user.save()
+        
+        print(f"User created: {user.email}")
+        print(f"Username: {user.username}")
+        
+        return Response({
+            'message': 'Registration successful! You can now login.',
+            'email': user.email,
+            'username': user.username,
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'username': user.username,
+                'role': user.role
+            }
+        }, status=status.HTTP_201_CREATED)
 
 
 class VerifyEmailView(APIView):
@@ -83,16 +97,9 @@ class VerifyEmailView(APIView):
             user = None
         
         if user and default_token_generator.check_token(user, token):
-            # Verify email
             user.is_email_verified = True
             user.is_active = True
             user.save()
-            
-            # Send welcome email
-            try:
-                send_welcome_email(user)
-            except:
-                pass  # Don't fail if welcome email fails
             
             return Response({
                 'message': 'Email verified successfully! You can now login.'
@@ -131,7 +138,6 @@ class LoginView(APIView):
         email = request.data.get('email')
         password = request.data.get('password')
         
-        # Check if it's a Gmail address
         if not email.endswith('@gmail.com'):
             return Response({'error': 'Only Gmail accounts are allowed'}, 
                           status=status.HTTP_401_UNAUTHORIZED)
@@ -139,10 +145,9 @@ class LoginView(APIView):
         user = authenticate(request, username=email, password=password)
         
         if user:
-            # Check if email is verified
             if not user.is_email_verified:
                 return Response({
-                    'error': 'Please verify your email before logging in. Check your inbox.'
+                    'error': 'Please verify your email before logging in.'
                 }, status=status.HTTP_403_FORBIDDEN)
             
             refresh = RefreshToken.for_user(user)

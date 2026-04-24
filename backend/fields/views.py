@@ -196,7 +196,7 @@ class FieldViewSet(viewsets.ModelViewSet):
 
 # ==================== OBSERVATION VIEWSET ====================
 
-class ObservationViewSet(viewsets.ReadOnlyModelViewSet):
+class ObservationViewSet(viewsets.ModelViewSet):  
     serializer_class = ObservationSerializer
     permission_classes = [IsAuthenticated]
     
@@ -205,6 +205,20 @@ class ObservationViewSet(viewsets.ReadOnlyModelViewSet):
         if user.role == 'admin':
             return Observation.objects.all().select_related('field', 'agent')
         return Observation.objects.filter(field__assigned_to=user).select_related('field', 'agent')
+    
+    def perform_update(self, serializer):
+        """Allow agents to update their own observations"""
+        if self.request.user.role == 'admin' or serializer.instance.agent == self.request.user:
+            serializer.save()
+        else:
+            raise PermissionError("You can only update your own observations")
+    
+    def perform_destroy(self, instance):
+        """Allow agents to delete their own observations"""
+        if self.request.user.role == 'admin' or instance.agent == self.request.user:
+            instance.delete()
+        else:
+            raise PermissionError("You can only delete your own observations")
 
 
 # ==================== DASHBOARD VIEWS ====================
@@ -381,8 +395,31 @@ class AvailableAgentsView(APIView):
         })
 
 
+class MyAssignedFieldsView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        # Debug
+        print(f"User: {request.user.email}")
+        print(f"User role: '{request.user.role}'")
+        print(f"User role type: {type(request.user.role)}")
+        print(f"Is agent? {request.user.role == 'agent'}")
+        
+        if request.user.role != 'agent':
+            return Response({
+                'error': f'This endpoint is for field agents only. Your role is: {request.user.role}'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        fields = Field.objects.filter(assigned_to=request.user)
+        serializer = FieldSerializer(fields, many=True)
+        
+        return Response({
+            'total_fields': fields.count(),
+            'fields': serializer.data
+        })
+    
 class AgentFieldsView(APIView):
-    """Get all fields assigned to a specific agent"""
+    """Get all fields assigned to a specific agent - Admin only"""
     permission_classes = [IsAuthenticated]
     
     @extend_schema(
@@ -391,8 +428,8 @@ class AgentFieldsView(APIView):
         tags=["Field Assignments"]
     )
     def get(self, request, agent_id):
-        if request.user.role != 'admin' and request.user.id != agent_id:
-            return Response({'error': 'Unauthorized access'}, status=status.HTTP_403_FORBIDDEN)
+        if request.user.role != 'admin':
+            return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
         
         agent = get_object_or_404(User, id=agent_id, role='agent')
         fields = Field.objects.filter(assigned_to=agent)
@@ -409,30 +446,7 @@ class AgentFieldsView(APIView):
             'total_fields': fields.count(),
             'fields': serializer.data
         })
-
-
-class MyAssignedFieldsView(APIView):
-    """Get fields assigned to the current authenticated agent"""
-    permission_classes = [IsAuthenticated]
     
-    @extend_schema(
-        summary="My assigned fields",
-        description="Get all fields assigned to the currently logged-in agent.",
-        tags=["Field Assignments"]
-    )
-    def get(self, request):
-        if request.user.role != 'agent':
-            return Response({'error': 'This endpoint is for field agents only'}, status=status.HTTP_403_FORBIDDEN)
-        
-        fields = Field.objects.filter(assigned_to=request.user)
-        serializer = FieldSerializer(fields, many=True)
-        
-        return Response({
-            'total_fields': fields.count(),
-            'fields': serializer.data
-        })
-
-
 # ==================== EXPORT VIEWS ====================
 
 class ExportFieldsCSVView(APIView):
