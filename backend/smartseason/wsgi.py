@@ -8,9 +8,12 @@ https://docs.djangoproject.com/en/6.0/howto/deployment/wsgi/
 """
 
 import os
-
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'smartseason.settings_production')
+# Use production settings on Render
+if os.environ.get('RENDER'):
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'smartseason.settings_production')
+else:
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'smartseason.settings')
 
 application = get_wsgi_application()
