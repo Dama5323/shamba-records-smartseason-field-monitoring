@@ -4,6 +4,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock, AlertCircle, UserCircle, Shield } from 'lucide-react';
 
+// Logo image URL
+const LOGO_URL = 'https://res.cloudinary.com/dzyqof9it/image/upload/v1777133180/shamba_n7wgns.jpg';
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,7 +44,14 @@ const Login = () => {
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
-          <div className="text-5xl mb-3">🌾</div>
+          {/* Logo Image - Replaced emoji */}
+          <div className="flex justify-center mb-4">
+            <img 
+              src={LOGO_URL} 
+              alt="SmartSeason Logo" 
+              className="h-20 w-auto rounded-xl shadow-sm"
+            />
+          </div>
           <h1 className="text-3xl font-bold text-gray-800">SmartSeason</h1>
           <p className="text-gray-600 mt-2">Field Monitoring System</p>
         </div>
@@ -65,7 +75,7 @@ const Login = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input-field pl-10"
-                placeholder="you@example.com"
+                placeholder="you@gmail.com"
                 required
               />
             </div>
