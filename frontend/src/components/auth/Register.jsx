@@ -6,6 +6,7 @@ import { Leaf, Mail, Lock, User, Eye, EyeOff, Shield } from 'lucide-react'
 const Register = () => {
   const [formData, setFormData] = useState({
     email: '',
+    username: '',
     password: '',
     confirmPassword: '',
     first_name: '',

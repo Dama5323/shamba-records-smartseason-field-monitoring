@@ -99,7 +99,38 @@ const UserManagement = () => {
       setCreating(false)
     }
   }
-  
+  const handleCreateAgent = async () => {
+    if (!newAgent.email || !newAgent.username || !newAgent.password) {
+        toast.error('Please fill in all fields')
+        return
+    }
+    
+    if (newAgent.password !== newAgent.confirmPassword) {
+        toast.error('Passwords do not match')
+        return
+    }
+    
+    setCreating(true)
+    try {
+        await authService.register({ 
+        email: newAgent.email, 
+        username: newAgent.username, 
+        password: newAgent.password,
+        role: 'agent',
+        first_name: newAgent.first_name || '',
+        last_name: newAgent.last_name || ''
+        })
+        toast.success('Field Agent created successfully')
+        setShowAgentModal(false)
+        setNewAgent({ email: '', username: '', password: '', confirmPassword: '', first_name: '', last_name: '' })
+        fetchUsers()
+    } catch (error) {
+        toast.error(error.response?.data?.error || 'Failed to create agent')
+    } finally {
+        setCreating(false)
+    }
+    }
+
   const getRoleBadgeColor = (role) => {
     return role === 'admin' || role === 'ADMIN'
       ? 'bg-purple-100 text-purple-800' 
