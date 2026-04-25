@@ -292,7 +292,7 @@ class RecentFieldsView(APIView):
         return Response(data)
 
 
-# ==================== FIELD ASSIGNMENT VIEWS (CRITICAL - WAS MISSING) ====================
+# ==================== FIELD ASSIGNMENT VIEWS  ====================
 
 class AssignFieldView(APIView):
     """Assign a field to an agent - Admin only"""
@@ -446,6 +446,68 @@ class AgentFieldsView(APIView):
             'total_fields': fields.count(),
             'fields': serializer.data
         })
+    
+
+class CreateDemoFieldsView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        from datetime import date, timedelta
+        
+        # Check if user already has fields
+        if Field.objects.filter(assigned_to=request.user).exists():
+            return Response({
+                'message': 'You already have fields. Demo fields not created.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        demo_fields = [
+            {
+                'name': f'{request.user.first_name}\'s Demo Maize Field',
+                'crop_type': 'Maize',
+                'planting_date': date.today() - timedelta(days=30),
+                'current_stage': 'growing',
+                'field_size': 5.5,
+                'location': 'Demo Farm - North Section',
+                'soil_type': 'Loam',
+                'notes': '🌽 Welcome to SmartSeason! This is your demo maize field. Track its growth from planted to harvest.',
+                'assigned_to': request.user,
+                'created_by': request.user
+            },
+            {
+                'name': f'{request.user.first_name}\'s Demo Wheat Field',
+                'crop_type': 'Wheat',
+                'planting_date': date.today() - timedelta(days=15),
+                'current_stage': 'planted',
+                'field_size': 3.2,
+                'location': 'Demo Farm - South Section',
+                'soil_type': 'Clay',
+                'notes': '🌾 Your demo wheat field. Try adding observations and updating the stage!',
+                'assigned_to': request.user,
+                'created_by': request.user
+            },
+            {
+                'name': f'{request.user.first_name}\'s Demo Rice Paddy',
+                'crop_type': 'Rice',
+                'planting_date': date.today() - timedelta(days=60),
+                'current_stage': 'ready',
+                'field_size': 4.0,
+                'location': 'Demo Farm - East Section',
+                'soil_type': 'Silt',
+                'notes': '🍚 This demo rice field is ready for harvest. Check out the observation history!',
+                'assigned_to': request.user,
+                'created_by': request.user
+            },
+        ]
+        
+        created_fields = []
+        for field_data in demo_fields:
+            field = Field.objects.create(**field_data)
+            created_fields.append(field.name)
+            
+        return Response({
+            'message': f'Created {len(created_fields)} demo fields',
+            'fields': created_fields
+        }, status=status.HTTP_201_CREATED)
     
 # ==================== EXPORT VIEWS ====================
 

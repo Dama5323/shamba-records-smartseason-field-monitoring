@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     FieldViewSet, ObservationViewSet, DashboardStatsView, RecentFieldsView,
     AssignFieldView, UnassignFieldView, AvailableAgentsView, AgentFieldsView,
-    MyAssignedFieldsView, ExportFieldsCSVView, ExportObservationsCSVView
+    MyAssignedFieldsView, ExportFieldsCSVView, ExportObservationsCSVView, CreateDemoFieldsView
 )
 
 router = DefaultRouter()
@@ -18,12 +18,13 @@ urlpatterns = [
     path('dashboard/stats/', DashboardStatsView.as_view(), name='dashboard-stats'),
     path('dashboard/recent-fields/', RecentFieldsView.as_view(), name='recent-fields'),
     
-    # Field Assignments (CRITICAL - These were missing!)
+    # Field Assignments and Agent Views
     path('fields/assign/<int:field_id>/', AssignFieldView.as_view(), name='assign-field'),
     path('fields/unassign/<int:field_id>/', UnassignFieldView.as_view(), name='unassign-field'),
     path('agents/', AvailableAgentsView.as_view(), name='available-agents'),
     path('agents/<int:agent_id>/fields/', AgentFieldsView.as_view(), name='agent-fields'),
     path('my-fields/', MyAssignedFieldsView.as_view(), name='my-assigned-fields'),
+    path('create-demo-fields/', CreateDemoFieldsView.as_view(), name='create-demo-fields'),
     
     # Export
     path('export/fields/csv/', ExportFieldsCSVView.as_view(), name='export-fields-csv'),
