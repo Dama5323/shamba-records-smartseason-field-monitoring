@@ -37,23 +37,25 @@ export const AuthProvider = ({ children }) => {
       const data = await authService.login(email, password)
       setUser(data.user)
       toast.success('Login successful!')
-      return true
+      return { success: true, data }
     } catch (error) {
       console.error('Login error:', error)
-      toast.error(error.response?.data?.message || 'Login failed')
-      return false
+      const message = error.response?.data?.error || 'Login failed'
+      toast.error(message)
+      return { success: false, error: message }
     }
   }
   
   const register = async (userData) => {
     try {
       const data = await authService.register(userData)
-      toast.success('Registration successful! Please verify your email.')
-      return true
+      toast.success(data.message || 'Registration successful! You can now login.')
+      return { success: true, data }
     } catch (error) {
       console.error('Registration error:', error)
-      toast.error(error.response?.data?.message || 'Registration failed')
-      return false
+      const message = error.response?.data?.error || error.response?.data?.message || 'Registration failed'
+      toast.error(message)
+      return { success: false, error: message }
     }
   }
   
@@ -70,11 +72,11 @@ export const AuthProvider = ({ children }) => {
       setUser(currentUser)
       localStorage.setItem('user', JSON.stringify(currentUser))
       toast.success('Profile updated successfully')
-      return true
+      return { success: true, data: updatedUser }
     } catch (error) {
       console.error('Update profile error:', error)
       toast.error('Failed to update profile')
-      return false
+      return { success: false, error: error.response?.data?.message }
     }
   }
   
