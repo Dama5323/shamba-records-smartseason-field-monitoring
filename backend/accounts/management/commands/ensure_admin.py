@@ -11,7 +11,7 @@ class Command(BaseCommand):
             if not User.objects.filter(role='admin').exists():
                 self.stdout.write('🚀 Creating default admin user...')
                 admin = User.objects.create(
-                    email='admin@shambarecords.com',
+                    email='adminshambarecords@gmail.com',
                     username='admin',
                     first_name='System',
                     last_name='Admin',
@@ -23,7 +23,7 @@ class Command(BaseCommand):
                 )
                 admin.set_password('Admin@123')
                 admin.save()
-                self.stdout.write(self.style.SUCCESS('✅ Admin created: admin@shambarecords.com / Admin@123'))
+                self.stdout.write(self.style.SUCCESS('✅ Admin created: adminshambarecords@gmail.com / Admin@123'))
             else:
                 self.stdout.write('✓ Admin user already exists')
         except Exception as e:
