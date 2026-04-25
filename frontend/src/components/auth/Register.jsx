@@ -11,7 +11,7 @@ const Register = () => {
     confirmPassword: '',
     first_name: '',
     last_name: '',
-    role: 'agent'  // Changed from 'FIELD_AGENT' to 'agent' to match backend
+    role: 'agent'
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -48,6 +48,8 @@ const Register = () => {
     
     setLoading(true)
     const { confirmPassword, ...registerData } = formData
+    console.log('Sending to backend:', registerData)  // Debug line
+    
     const result = await register(registerData)
     setLoading(false)
     
@@ -114,6 +116,29 @@ const Register = () => {
                   placeholder="Doe"
                 />
               </div>
+            </div>
+            
+            {/* Username Field - ADDED */}
+            <div>
+              <label htmlFor="username" className="label">
+                Username *
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  required
+                  value={formData.username}
+                  onChange={handleChange}
+                  className="input pl-10"
+                  placeholder="john_doe123"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Choose a unique username</p>
             </div>
             
             <div>
