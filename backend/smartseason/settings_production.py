@@ -2,7 +2,42 @@ import os
 import dj_database_url
 from .settings import *
 
-# Production settings
+# ========== AUTO-CREATE ADMIN USER ==========
+# This runs during build on Render
+import sys
+
+if os.environ.get('RENDER', 'False') == 'True' or os.environ.get('DATABASE_URL'):
+    try:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        
+        if not User.objects.filter(role='admin').exists():
+            print("=" * 50)
+            print("🚀 Creating default admin user...")
+            print("=" * 50)
+            
+            admin = User.objects.create(
+                email='admin@shambarecords.com',
+                username='admin',
+                first_name='System',
+                last_name='Admin',
+                role='admin',
+                is_active=True,
+                is_email_verified=True,
+                is_staff=True,
+                is_superuser=True
+            )
+            admin.set_password('Admin@123')
+            admin.save()
+            
+            print("✅ Admin created: admin@shambarecords.com / Admin@123")
+            print("=" * 50)
+        else:
+            print("✓ Admin user already exists")
+    except Exception as e:
+        print(f"⚠️ Could not create admin: {e}")
+
+# ========== YOUR EXISTING PRODUCTION SETTINGS ==========
 DEBUG = False
 
 # Security
@@ -25,7 +60,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media files (temporary - consider Cloudinary for production)
+# Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'mediafiles')
 
