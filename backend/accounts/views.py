@@ -26,70 +26,88 @@ class RegisterView(APIView):
     
     def post(self, request):
         print("=== REGISTRATION ATTEMPT ===")
-        print("Request data:", request.data)
         
         email = request.data.get('email')
         username = request.data.get('username')
         password = request.data.get('password')
         role = request.data.get('role', 'agent')
+        first_name = request.data.get('first_name', '')
+        last_name = request.data.get('last_name', '')
         phone_number = request.data.get('phone_number', '')
         location = request.data.get('location', '')
         farm_name = request.data.get('farm_name', '')
         
-        # CRITICAL SECURITY: Prevent users from registering as admin
+        # Debug logging
+        print(f"Email: {email}")
+        print(f"Username: {username}")
+        print(f"Role provided: {role}")
+        
+        # CRITICAL: Prevent admin registration
         if role == 'admin':
             return Response({
-                'error': 'Admin accounts cannot be created through registration. Only existing admins can create admin accounts.',
-                'details': 'Please register as a Field Agent first. Admin access is granted by existing administrators.'
+                'error': 'Admin accounts cannot be created through registration.'
             }, status=status.HTTP_403_FORBIDDEN)
         
-        # Force role to 'agent' for all public registrations
+        # Force role to agent
         role = 'agent'
         
-        # Check if user exists
+        # Validation
+        if not email or not username or not password:
+            return Response({
+                'error': 'Email, username, and password are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
         if User.objects.filter(email=email).exists():
-            return Response({'email': ['Email already exists']}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
         
         if User.objects.filter(username=username).exists():
-            return Response({'username': ['Username already exists']}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Username already exists'}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Check Gmail restriction
         if not email.endswith('@gmail.com'):
             return Response({'error': 'Only Gmail accounts are allowed'}, 
                           status=status.HTTP_400_BAD_REQUEST)
         
-        # Validate password length
         if len(password) < 8:
             return Response({'error': 'Password must be at least 8 characters'}, 
                           status=status.HTTP_400_BAD_REQUEST)
         
-        # Create user with set_password (this hashes the password)
-        user = User(
-            email=email,
-            username=username,
-            role=role,  # Always 'agent'
-            phone_number=phone_number,
-            location=location,
-            farm_name=farm_name
-        )
-        user.set_password(password)
-        user.is_active = True
-        user.is_email_verified = True
-        user.save()
-        
-        print(f"User created: {user.email} (Role: {user.role})")
-        
-        return Response({
-            'message': 'Registration successful! You can now login.',
-            'email': user.email,
-            'user': {
-                'id': user.id,
+        try:
+            # Create user
+            user = User(
+                email=email,
+                username=username,
+                role=role,
+                first_name=first_name,
+                last_name=last_name,
+                phone_number=phone_number,
+                location=location,
+                farm_name=farm_name
+            )
+            user.set_password(password)
+            user.is_active = True
+            user.is_email_verified = True
+            user.save()
+            
+            print(f"✅ User created: {user.email} (ID: {user.id})")
+            
+            return Response({
+                'message': 'Registration successful! You can now login.',
                 'email': user.email,
-                'username': user.username,
-                'role': user.role  # Will always be 'agent'
-            }
-        }, status=status.HTTP_201_CREATED)
-
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'username': user.username,
+                    'role': user.role
+                }
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            print(f"❌ Error creating user: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return Response({
+                'error': f'Database error: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class VerifyEmailView(APIView):
     permission_classes = []
