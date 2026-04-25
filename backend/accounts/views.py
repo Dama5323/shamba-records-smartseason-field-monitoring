@@ -17,6 +17,7 @@ from .serializers import UserSerializer
 from .email_utils import send_verification_email, send_welcome_email
 from .models import User
 import time
+from rest_framework.permissions import IsAuthenticated
 
 
 
@@ -27,61 +28,65 @@ class RegisterView(APIView):
         print("=== REGISTRATION ATTEMPT ===")
         print("Request data:", request.data)
         
-        # Get data from request
         email = request.data.get('email')
+        username = request.data.get('username')
         password = request.data.get('password')
         role = request.data.get('role', 'agent')
         phone_number = request.data.get('phone_number', '')
         location = request.data.get('location', '')
         farm_name = request.data.get('farm_name', '')
-        first_name = request.data.get('first_name', '')
-        last_name = request.data.get('last_name', '')
         
-        # Generate username from email (remove @gmail.com part)
-        username = email.split('@')[0] if email else f"user_{int(time.time())}"
+        # CRITICAL SECURITY: Prevent users from registering as admin
+        if role == 'admin':
+            return Response({
+                'error': 'Admin accounts cannot be created through registration. Only existing admins can create admin accounts.',
+                'details': 'Please register as a Field Agent first. Admin access is granted by existing administrators.'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Force role to 'agent' for all public registrations
+        role = 'agent'
         
         # Check if user exists
         if User.objects.filter(email=email).exists():
             return Response({'email': ['Email already exists']}, status=status.HTTP_400_BAD_REQUEST)
         
         if User.objects.filter(username=username).exists():
-            # If username exists, add a random number
-            username = f"{username}_{User.objects.count()}"
+            return Response({'username': ['Username already exists']}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Convert role from FIELD_AGENT to agent (lowercase)
-        if role == 'FIELD_AGENT':
-            role = 'agent'
-        elif role == 'ADMIN':
-            role = 'admin'
+        # Check Gmail restriction
+        if not email.endswith('@gmail.com'):
+            return Response({'error': 'Only Gmail accounts are allowed'}, 
+                          status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate password length
+        if len(password) < 8:
+            return Response({'error': 'Password must be at least 8 characters'}, 
+                          status=status.HTTP_400_BAD_REQUEST)
         
         # Create user with set_password (this hashes the password)
         user = User(
             email=email,
             username=username,
-            first_name=first_name,
-            last_name=last_name,
-            role=role,
+            role=role,  # Always 'agent'
             phone_number=phone_number,
             location=location,
             farm_name=farm_name
         )
-        user.set_password(password)  # This properly hashes the password
+        user.set_password(password)
         user.is_active = True
         user.is_email_verified = True
         user.save()
         
-        print(f"User created: {user.email}")
-        print(f"Username: {user.username}")
+        print(f"User created: {user.email} (Role: {user.role})")
         
         return Response({
             'message': 'Registration successful! You can now login.',
             'email': user.email,
-            'username': user.username,
             'user': {
                 'id': user.id,
                 'email': user.email,
                 'username': user.username,
-                'role': user.role
+                'role': user.role  # Will always be 'agent'
             }
         }, status=status.HTTP_201_CREATED)
 
@@ -506,3 +511,85 @@ class ToggleUserStatusView(APIView):
                 'role': user.role
             }
         })
+
+
+class CreateAdminUserView(APIView):
+    """Only existing admins can create new admin users"""
+    permission_classes = [IsAuthenticated]
+    
+    @extend_schema(
+        summary="Create admin user (Admin only)",
+        description="Create a new admin user. Only existing admins can create new admin accounts.",
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'email': {'type': 'string', 'format': 'email'},
+                    'username': {'type': 'string'},
+                    'password': {'type': 'string', 'minLength': 8},
+                },
+                'required': ['email', 'username', 'password']
+            }
+        },
+        tags=["Admin"]
+    )
+    def post(self, request):
+        # Check if current user is admin
+        if request.user.role != 'admin':
+            return Response({
+                'error': 'Only existing administrators can create new admin accounts'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        email = request.data.get('email')
+        username = request.data.get('username')
+        password = request.data.get('password')
+        
+        # Validation
+        if not email or not username or not password:
+            return Response({
+                'error': 'Email, username, and password are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if user exists
+        if User.objects.filter(email=email).exists():
+            return Response({
+                'error': 'Email already exists'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if User.objects.filter(username=username).exists():
+            return Response({
+                'error': 'Username already exists'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if len(password) < 8:
+            return Response({
+                'error': 'Password must be at least 8 characters'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check Gmail restriction
+        if not email.endswith('@gmail.com'):
+            return Response({
+                'error': 'Only Gmail accounts are allowed'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Create admin user
+        admin_user = User(
+            email=email,
+            username=username,
+            role='admin',
+            is_active=True,
+            is_email_verified=True,
+            is_staff=True  # Gives Django admin access
+        )
+        admin_user.set_password(password)
+        admin_user.save()
+        
+        return Response({
+            'message': 'Admin user created successfully',
+            'user': {
+                'id': admin_user.id,
+                'email': admin_user.email,
+                'username': admin_user.username,
+                'role': admin_user.role
+            }
+        }, status=status.HTTP_201_CREATED)

@@ -25,6 +25,7 @@ urlpatterns = [
     path('agents/<int:agent_id>/fields/', AgentFieldsView.as_view(), name='agent-fields'),
     path('my-fields/', MyAssignedFieldsView.as_view(), name='my-assigned-fields'),
     path('create-demo-fields/', CreateDemoFieldsView.as_view(), name='create-demo-fields'),
+
     
     # Export
     path('export/fields/csv/', ExportFieldsCSVView.as_view(), name='export-fields-csv'),

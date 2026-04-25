@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import (
+    CreateAdminUserView,
     LoginView, 
     RegisterView, 
     VerifyEmailView, 
@@ -10,8 +11,9 @@ from .views import (
     ListUsersView,
     UserDetailView,
     ToggleUserStatusView,
-    UserStatsView
+    UserStatsView,
 )
+
 from .social_auth import GoogleSocialAuth, FacebookSocialAuth
 
 urlpatterns = [
@@ -35,4 +37,5 @@ urlpatterns = [
     path('users/', ListUsersView.as_view(), name='list_users'),
     path('users/<int:user_id>/', UserDetailView.as_view(), name='user_detail'),
     path('users/<int:user_id>/toggle-status/', ToggleUserStatusView.as_view(), name='toggle_user_status'),
+    path('admin/create/', CreateAdminUserView.as_view(), name='create-admin'),
 ]
