@@ -7,9 +7,7 @@ import {
   TrendingUp,
   Plus,
   BarChart3,
-  Users,
   Calendar,
-  MapPin,
   MessageSquare,
   Edit,
   Eye
@@ -19,6 +17,7 @@ import FieldList from '../fields/FieldList'
 import { fieldService, dashboardService } from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
+import api from '../../services/api'
 
 const AgentDashboard = () => {
   const [fields, setFields] = useState([])
@@ -31,12 +30,14 @@ const AgentDashboard = () => {
   })
   const [loading, setLoading] = useState(true)
   const [recentActivities, setRecentActivities] = useState([])
+  const [creatingDemo, setCreatingDemo] = useState(false)
   const navigate = useNavigate()
   const { user } = useAuth()
   
   useEffect(() => {
     fetchMyFields()
     fetchDashboardStats()
+    checkAndCreateDemoFields()
     fetchRecentActivities()
   }, [])
   
@@ -93,10 +94,40 @@ const AgentDashboard = () => {
   const fetchRecentActivities = async () => {
     // Mock recent activities - replace with actual API call
     setRecentActivities([
-      { id: 1, action: 'Added observation', field: 'Test Maize Field', time: '2 hours ago', icon: MessageSquare },
-      { id: 2, action: 'Updated stage to Ready', field: 'Test Maize Field', time: '1 day ago', icon: Edit },
-      { id: 3, action: 'Created field', field: 'Test Field for Agent', time: '3 days ago', icon: Plus },
+      { id: 1, action: 'Added observation', field: 'Demo Maize Field', time: '2 hours ago', icon: MessageSquare },
+      { id: 2, action: 'Updated stage to Ready', field: 'Demo Rice Paddy', time: '1 day ago', icon: Edit },
+      { id: 3, action: 'Created field', field: 'Demo Wheat Field', time: '3 days ago', icon: Plus },
     ])
+  }
+  
+  const createDemoFields = async () => {
+    setCreatingDemo(true)
+    try {
+      const response = await api.post('/create-demo-fields/')
+      toast.success(response.data.message)
+      fetchMyFields() // Refresh fields
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to create demo fields')
+    } finally {
+      setCreatingDemo(false)
+    }
+  }
+  
+  const checkAndCreateDemoFields = async () => {
+    const response = await fieldService.getMyFields()
+    let fieldsData = []
+    if (response && response.fields && Array.isArray(response.fields)) {
+      fieldsData = response.fields
+    }
+    
+    // If no fields, create demo fields
+    if (fieldsData.length === 0) {
+      const demoCreated = localStorage.getItem('demo_fields_created')
+      if (!demoCreated) {
+        await createDemoFields()
+        localStorage.setItem('demo_fields_created', 'true')
+      }
+    }
   }
   
   const statsCards = stats ? [
@@ -107,15 +138,6 @@ const AgentDashboard = () => {
   ] : []
   
   const userDisplayName = user?.first_name || user?.username || user?.email?.split('@')[0] || 'User'
-  
-  const quickActions = [
-    { icon: Plus, label: 'Add Field', color: 'green', onClick: () => navigate('/fields/create'), adminOnly: true },
-    { icon: MessageSquare, label: 'Add Observation', color: 'blue', onClick: () => navigate('/fields') },
-    { icon: Edit, label: 'Update Stage', color: 'purple', onClick: () => navigate('/fields') },
-    { icon: Eye, label: 'View All', color: 'orange', onClick: () => navigate('/fields') },
-  ]
-  
-  const filteredActions = quickActions.filter(action => !action.adminOnly || user?.role === 'admin')
   
   if (loading) {
     return (
@@ -185,20 +207,53 @@ const AgentDashboard = () => {
             </div>
           </div>
           
-          {/* Quick Actions */}
+          {/* Quick Actions - Horizontal Cards */}
           <div className="card">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {filteredActions.map((action, idx) => (
-                <button
-                  key={idx}
-                  onClick={action.onClick}
-                  className={`p-3 bg-${action.color}-50 rounded-lg text-center hover:bg-${action.color}-100 transition-all group`}
-                >
-                  <action.icon className={`h-5 w-5 text-${action.color}-600 mx-auto mb-1 group-hover:scale-110 transition-transform`} />
-                  <p className="text-xs text-gray-700">{action.label}</p>
-                </button>
-              ))}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <button 
+                onClick={() => navigate('/fields/create')}
+                className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl text-center hover:shadow-md transition-all group"
+              >
+                <div className="bg-green-600 w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
+                  <Plus className="h-5 w-5 text-white" />
+                </div>
+                <p className="text-sm font-medium text-gray-700">Add Field</p>
+                <p className="text-xs text-gray-500">Create new field</p>
+              </button>
+              
+              <button 
+                onClick={() => navigate('/fields')}
+                className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl text-center hover:shadow-md transition-all group"
+              >
+                <div className="bg-blue-600 w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
+                  <MessageSquare className="h-5 w-5 text-white" />
+                </div>
+                <p className="text-sm font-medium text-gray-700">Add Observation</p>
+                <p className="text-xs text-gray-500">Record crop status</p>
+              </button>
+              
+              <button 
+                onClick={() => navigate('/fields')}
+                className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl text-center hover:shadow-md transition-all group"
+              >
+                <div className="bg-purple-600 w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
+                  <Edit className="h-5 w-5 text-white" />
+                </div>
+                <p className="text-sm font-medium text-gray-700">Update Stage</p>
+                <p className="text-xs text-gray-500">Advance growth</p>
+              </button>
+              
+              <button 
+                onClick={() => navigate('/at-risk')}
+                className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl text-center hover:shadow-md transition-all group"
+              >
+                <div className="bg-orange-600 w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
+                  <AlertTriangle className="h-5 w-5 text-white" />
+                </div>
+                <p className="text-sm font-medium text-gray-700">At Risk</p>
+                <p className="text-xs text-gray-500">View issues</p>
+              </button>
             </div>
           </div>
         </div>
