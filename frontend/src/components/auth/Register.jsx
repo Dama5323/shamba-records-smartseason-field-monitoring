@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { Leaf, Mail, Lock, User, Eye, EyeOff } from 'lucide-react'
+import { Leaf, Mail, Lock, User, Eye, EyeOff, Shield } from 'lucide-react'
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -10,7 +10,7 @@ const Register = () => {
     confirmPassword: '',
     first_name: '',
     last_name: '',
-    role: 'FIELD_AGENT'
+    role: 'agent'  // Changed from 'FIELD_AGENT' to 'agent' to match backend
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -39,13 +39,21 @@ const Register = () => {
       return
     }
     
+    // Validate Gmail address
+    if (!formData.email.endsWith('@gmail.com')) {
+      setError('Only Gmail addresses are allowed to register')
+      return
+    }
+    
     setLoading(true)
     const { confirmPassword, ...registerData } = formData
-    const success = await register(registerData)
+    const result = await register(registerData)
     setLoading(false)
     
-    if (success) {
+    if (result?.success) {
       navigate('/login')
+    } else if (result?.error) {
+      setError(result.error)
     }
   }
   
@@ -124,9 +132,10 @@ const Register = () => {
                   value={formData.email}
                   onChange={handleChange}
                   className="input pl-10"
-                  placeholder="you@example.com"
+                  placeholder="you@gmail.com"
                 />
               </div>
+              <p className="text-xs text-gray-500 mt-1">Only Gmail addresses are accepted</p>
             </div>
             
             <div>
@@ -159,6 +168,7 @@ const Register = () => {
                   )}
                 </button>
               </div>
+              <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
             </div>
             
             <div>
@@ -182,23 +192,33 @@ const Register = () => {
               </div>
             </div>
             
+            {/* Role Selection - Admin option is DISABLED */}
             <div>
               <label htmlFor="role" className="label">
-                Role
+                Account Type
               </label>
-              <select
-                id="role"
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="input"
-              >
-                <option value="FIELD_AGENT">Field Agent</option>
-                <option value="ADMIN">Admin (Requires approval)</option>
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Note: Admin accounts may require separate approval
-              </p>
+              <div className="relative">
+                <select
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className="input pl-10 appearance-none"
+                >
+                  <option value="agent">🌾 Field Agent</option>
+                  <option value="admin" disabled>👑 Admin (Invite Only)</option>
+                </select>
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Shield className="h-5 w-5 text-gray-400" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-start gap-2">
+                <Shield className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-gray-500">
+                  Admin accounts can only be created by existing administrators. 
+                  Please register as a Field Agent first.
+                </p>
+              </div>
             </div>
           </div>
           
@@ -218,6 +238,15 @@ const Register = () => {
               <Link to="/login" className="font-medium text-primary-600 hover:text-primary-500">
                 Sign in
               </Link>
+            </p>
+          </div>
+
+          {/* Demo Credentials Info */}
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            <p className="text-xs text-gray-500 text-center">
+              🔐 Demo Accounts (for testing):<br />
+              Admin: admin@shambarecords.com / Admin@123<br />
+              Agent: agent@shambarecords.com / Agent@123
             </p>
           </div>
         </form>

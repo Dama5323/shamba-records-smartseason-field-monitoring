@@ -81,6 +81,8 @@ export const authService = {
     const response = await api.put('/auth/profile/update/', data)
     return response.data
   },
+
+  createAdmin: (userData) => api.post('/auth/admin/create/', userData),
   
   changePassword: async (oldPassword, newPassword) => {
     const response = await api.post('/auth/change-password/', {
