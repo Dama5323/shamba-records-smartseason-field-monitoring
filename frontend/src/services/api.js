@@ -71,6 +71,11 @@ export const authService = {
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('user')
   },
+
+  createAgent: async (agentData) => {
+    const response = await api.post('/auth/register/', agentData)
+    return response.data
+  },
   
   getProfile: async () => {
     const response = await api.get('/auth/profile/')
