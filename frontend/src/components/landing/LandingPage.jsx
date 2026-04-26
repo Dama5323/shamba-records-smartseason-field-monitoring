@@ -320,7 +320,7 @@ const LandingPage = () => {
               >
                 Register as Admin
               </Link>
-              <p className="text-xs text-gray-400 text-center mt-2">Demo: admin@example.com / admin123</p>
+              <p className="text-xs text-gray-400 text-center mt-2">Demo: adminshambarecords@gmail.com / Admin@123</p>
             </div>
             
             {/* Agent Card */}
@@ -354,7 +354,7 @@ const LandingPage = () => {
               >
                 Register as Agent
               </Link>
-              <p className="text-xs text-gray-400 text-center mt-2">Demo: agent@example.com / agent123</p>
+              <p className="text-xs text-gray-400 text-center mt-2">Demo: agentshambarecords@gmail.com / agent123</p>
             </div>
           </div>
         </div>

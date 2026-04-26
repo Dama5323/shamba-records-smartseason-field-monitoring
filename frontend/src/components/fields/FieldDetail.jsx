@@ -24,6 +24,7 @@ import {
 import { fieldService } from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
+import AssignAgentModal from './AssignAgentModal'
 
 const FieldDetail = () => {
   const { id } = useParams()
@@ -39,6 +40,7 @@ const FieldDetail = () => {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [selectedImages, setSelectedImages] = useState([])
   const fileInputRef = useRef(null)
+  const [showAssignModal, setShowAssignModal] = useState(false)
   const [newObservation, setNewObservation] = useState({
     note: '',
     crop_health: 'good'
@@ -70,12 +72,15 @@ const FieldDetail = () => {
     }
   }
   
+  const handleFieldAssigned = () => {
+    fetchFieldDetails()
+  }
+  
   const handleImageSelect = (e) => {
     const files = Array.from(e.target.files)
     const imageUrls = files.map(file => URL.createObjectURL(file))
     setSelectedImages(prev => [...prev, ...imageUrls])
     
-    // Store files for upload
     setNewObservation(prev => ({
       ...prev,
       imageFiles: [...(prev.imageFiles || []), ...files]
@@ -124,7 +129,6 @@ const FieldDetail = () => {
         crop_health: newObservation.crop_health
       }
       
-      // If there are images, convert them to base64 or upload them
       if (newObservation.imageFiles && newObservation.imageFiles.length > 0) {
         const imagePromises = newObservation.imageFiles.map(file => {
           return new Promise((resolve) => {
@@ -293,13 +297,22 @@ const FieldDetail = () => {
         </button>
         <div className="flex space-x-3">
           {isAdmin && (
-            <button
-              onClick={handleDeleteField}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center space-x-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              <span>Delete Field</span>
-            </button>
+            <>
+              <button
+                onClick={() => setShowAssignModal(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+              >
+                <User className="h-4 w-4" />
+                <span>Assign Agent</span>
+              </button>
+              <button
+                onClick={handleDeleteField}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center space-x-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Delete Field</span>
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -665,6 +678,14 @@ const FieldDetail = () => {
           </div>
         )}
       </div>
+
+      {/* Assign Agent Modal */}
+      <AssignAgentModal
+        isOpen={showAssignModal}
+        onClose={() => setShowAssignModal(false)}
+        field={field}
+        onAssigned={handleFieldAssigned}
+      />
     </div>
   )
 }

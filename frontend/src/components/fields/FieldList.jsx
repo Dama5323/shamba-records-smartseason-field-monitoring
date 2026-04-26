@@ -4,7 +4,7 @@ import EmptyState from '../common/EmptyState'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 
-const FieldList = ({ fields, showActions = true }) => {
+const FieldList = ({ fields, showActions = true, onFieldUpdate }) => {
   const navigate = useNavigate()
   const { isAdmin } = useAuth()
   
@@ -22,7 +22,11 @@ const FieldList = ({ fields, showActions = true }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {fieldsArray.map((field) => (
-        <FieldCard key={field.id} field={field} />
+        <FieldCard 
+          key={field.id} 
+          field={field} 
+          onUpdate={onFieldUpdate}
+        />
       ))}
     </div>
   )

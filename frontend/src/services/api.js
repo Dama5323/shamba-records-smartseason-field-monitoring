@@ -190,11 +190,21 @@ export const fieldService = {
     const response = await api.delete(`/field-images/${imageId}/`)
     return response.data
     },
-  
-  unassignField: async (fieldId) => {
+
+    assignField: async (fieldId, agentId) => {
+    const response = await api.post(`/fields/assign/${fieldId}/`, { agent_id: agentId })
+    return response.data
+    },
+
+    unassignField: async (fieldId) => {
     const response = await api.post(`/fields/unassign/${fieldId}/`)
     return response.data
-  }
+    },
+
+    getAgents: async () => {
+    const response = await api.get('/agents/')
+    return response.data
+    },
 }
 
 // Dashboard services
