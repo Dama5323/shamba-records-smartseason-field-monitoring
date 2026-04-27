@@ -12,9 +12,9 @@ click-plugins==1.1.1.2
 click-repl==0.3.0
 colorama==0.4.6
 cryptography==46.0.7
-dj-database-url==3.1.2
+dj-database-url
 Django==4.2.7
-django-allauth==65.16.1
+django-allauth
 django-cors-headers==4.9.0
 djangorestframework==3.17.1
 djangorestframework_simplejwt==5.5.1
