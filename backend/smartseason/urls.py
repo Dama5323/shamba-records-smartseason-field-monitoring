@@ -20,6 +20,12 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.http import HttpResponse
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+
+@csrf_exempt
+def health_check(request):
+    return JsonResponse({"status": "ok", "message": "Server is running"})
 
 def home(request):
     return HttpResponse("""
@@ -59,6 +65,7 @@ urlpatterns = [
     # API Endpoints
     path('api/auth/', include('accounts.urls')),
     path('api/', include('fields.urls')),
+    path('health/', health_check, name='health_check'),
 ]
 
 # Serve media files in development
