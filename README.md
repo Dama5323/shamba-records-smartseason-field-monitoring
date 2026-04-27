@@ -2,11 +2,21 @@
 
 [![Live Demo](https://img.shields.io/badge/Live-Demo-green)](https://shamba-records-smartseason-field-mo.vercel.app/)
 [![API Docs](https://img.shields.io/badge/API-Docs-blue)](https://shamba-records-smartseason-field.onrender.com/api/docs/)
+[![Uptime](https://img.shields.io/badge/Uptime-99.3%25-brightgreen)](https://uptimerobot.com/)
 [![Django](https://img.shields.io/badge/Django-4.2-green)](https://www.djangoproject.com/)
 [![React](https://img.shields.io/badge/React-18-blue)](https://reactjs.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-cyan)](https://tailwindcss.com/)
 
 A comprehensive field monitoring system for tracking crop progress across multiple fields during growing seasons. Built for agricultural coordinators and field agents to manage crops, record observations, and monitor field health in real-time.
+
+## 🌐 Live Demo
+
+| Service | URL |
+|---------|-----|
+| **Frontend Application** | [https://shamba-records-smartseason-field-mo.vercel.app](https://shamba-records-smartseason-field-mo.vercel.app) |
+| **Backend API** | [https://shamba-records-smartseason-field.onrender.com](https://shamba-records-smartseason-field.onrender.com) |
+| **API Documentation** | [https://shamba-records-smartseason-field.onrender.com/api/docs/](https://shamba-records-smartseason-field.onrender.com/api/docs/) |
+
 
 ## 🔐 Demo Credentials
 
@@ -30,10 +40,13 @@ A comprehensive field monitoring system for tracking crop progress across multip
 - [Status Logic Explanation](#status-logic-explanation)
 - [Project Structure](#project-structure)
 - [Database Schema](#database-schema)
-- [Assumptions & Trade-offs](#assumptions--trade-offs)
+- [Assumptions--trade-offs](#assumptions--trade-offs)
 - [Deployment](#deployment)
+- [Monitoring--automation](#monitoring--automation)
 - [Future Improvements](#future-improvements)
 - [Troubleshooting](#troubleshooting)
+- [Acknowledgements](#acknowledgements)
+- [Contact](#contact)
 
 ---
 
@@ -140,28 +153,6 @@ Planted → Growing → Ready → Harvested
 
 ---
 
-## 🌐 Live Demo
-
-| Service | URL |
-|---------|-----|
-| **Frontend Application** | [https://shamba-records-smartseason-field-mo.vercel.app](https://shamba-records-smartseason-field-mo.vercel.app) |
-| **Backend API** | [https://shamba-records-smartseason-field.onrender.com](https://shamba-records-smartseason-field.onrender.com) |
-| **API Documentation** | [https://shamba-records-smartseason-field.onrender.com/api/docs/](https://shamba-records-smartseason-field.onrender.com/api/docs/) |
-| **Admin Panel** | [https://shamba-records-smartseason-field.onrender.com/admin/](https://shamba-records-smartseason-field.onrender.com/admin/) |
-
----
-
-## 🔐 Demo Credentials
-
-| Role | Email | Password |
-|------|-------|----------|
-| **Admin** | `adminshambarecords@gmail.com` | `Admin@123` |
-| **Field Agent** | `agentshambarecords@gmail.com` | `agent123` |
-
-> ⚠️ **Note:** These credentials are for testing purposes only. In production, admins should create unique credentials for each user.
-
----
-
 ## 🚀 Installation Guide
 
 ### Prerequisites
@@ -222,6 +213,39 @@ python manage.py runserver
 ```
 Backend will run at: `http://localhost:8000`
 
+### Step 3: Frontend Setup
+#### Install Dependencies
+```bash
+cd ../frontend
+npm install
+```
+
+#### Configure Environment Variables
+Create a .env file in the frontend/ directory:
+```
+env
+VITE_API_URL=http://localhost:8000/api
+```
+ 
+#### Run Development Server
+```
+bash
+npm run dev
+```
+Frontend will run at: http://localhost:5173
+
+
+## 📚 API Documentation
+
+Once the backend is running, access interactive API documentation:
+
+| Format | URL |
+|--------|-----|
+| **Swagger UI** | `http://localhost:8000/api/docs/` |
+| **ReDoc** | `http://localhost:8000/api/redoc/` |
+| **OpenAPI Schema** | `http://localhost:8000/api/schema/` |
+
+> 💡 **Tip:** The Swagger UI provides an interactive interface to test all API endpoints directly from your browser.
 
 ### 2. Key API Endpoints
 
@@ -446,12 +470,82 @@ Add environment variable:
 VITE_API_URL = https://your-backend-url.onrender.com/api
 
 
+## 📡 Monitoring & Automation
+To ensure the application remains accessible 24/7 on Render's free tier, the following monitoring and automation systems are in place:
+
+### Uptime Monitoring (Uptime Robot)
+
+- Purpose: Prevents the Render backend from sleeping after 15 minutes of inactivity
+
+- Interval: Every 5 minutes
+
+- Endpoint: GET /health/
+
+- Current Uptime: 99.3%
+
+- Status: ✅ Operational
+
+The health check endpoint returns a simple JSON response confirming the server is running:
+
+```json
+{"status": "ok", "message": "Server is running"}
+```
+
+#### Automated Database Renewal (cron-job.org)
+
+- Purpose: Prevents the free-tier PostgreSQL database from expiring after 30 days
+
+- Schedule: Every 25 days at midnight (Africa/Nairobi timezone)
+
+- Endpoint: POST /api/renew-database/
+
+- Authentication: X-API-Key header
+
+- Test Status: ✅ Successful (200 OK, 416ms response)
+
+The renewal webhook triggers a management command that:
+
+1. Creates a database backup
+
+2. Deletes the expiring database
+
+3. Provisions a new free-tier database
+
+4. Restores all data from the backup
+
+#### Automation Architecture
+```text
+┌─────────────────────────────────────────────────────────┐
+│                    UPTIME ROBOT                         │
+│  ✅ Every 5 minutes → /health/ → Keeps app awake       │
+│  📊 Uptime: 99.3% (excellent for free tier)            │
+└─────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│                    CRON-JOB.ORG                         │
+│  ⏰ Every 25 days → /api/renew-database/ → Renews DB   │
+│  🔐 X-API-Key authentication → Secure                   │
+│  📅 Prevents 30-day database expiration                 │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### Verify Monitoring Status
+```bash
+# Check health endpoint
+curl https://shamba-records-smartseason-field.onrender.com/health/
+
+# Test webhook (requires valid API key)
+curl -X POST https://shamba-records-smartseason-field.onrender.com/api/renew-database/ \
+  -H "X-API-Key: your-secret-key"
+
+```
+
+
 ## 🔮 Future Improvements
 Real-time notifications for at-risk fields
 
 Weather API integration for planting recommendations
-
-Image uploads for field photos
 
 Bulk import fields via CSV
 
