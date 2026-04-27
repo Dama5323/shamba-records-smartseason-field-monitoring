@@ -249,8 +249,6 @@ Once the backend is running, access interactive API documentation:
 
 ### 2. Key API Endpoints
 
-```markdown
-
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
 | POST | `/api/auth/register/` | Register new user | Public |
@@ -264,7 +262,6 @@ Once the backend is running, access interactive API documentation:
 | POST | `/api/fields/assign/{id}/` | Assign field to agent | Admin only |
 | GET | `/api/auth/users/` | List users | Admin only |
 | POST | `/api/auth/admin/create/` | Create admin user | Admin only |
-```
 
 
 ## 🧠 Design Decisions
