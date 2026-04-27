@@ -9,7 +9,7 @@
 
 A comprehensive field monitoring system for tracking crop progress across multiple fields during growing seasons. Built for agricultural coordinators and field agents to manage crops, record observations, and monitor field health in real-time.
 
-## 🌐 Live Demo
+## Live Demo
 
 | Service | URL |
 |---------|-----|
@@ -18,7 +18,7 @@ A comprehensive field monitoring system for tracking crop progress across multip
 | **API Documentation** | [https://shamba-records-smartseason-field.onrender.com/api/docs/](https://shamba-records-smartseason-field.onrender.com/api/docs/) |
 
 
-## 🔐 Demo Credentials
+## Demo Credentials
 
 | Role | Email | Password |
 |------|-------|----------|
@@ -51,7 +51,7 @@ A comprehensive field monitoring system for tracking crop progress across multip
 
 ---
 
-## 🎯 Overview
+## Overview
 
 SmartSeason helps agricultural organizations track crop progress across multiple fields. The system supports two user roles:
 
@@ -62,7 +62,7 @@ The application automatically computes field status (Active/At Risk/Completed) b
 
 ---
 
-## ✨ Features
+## Features
 
 ### Core Features
 
@@ -78,7 +78,7 @@ The application automatically computes field status (Active/At Risk/Completed) b
 | **User Management** | Admins can create, activate, deactivate users |
 | **API Documentation** | Interactive Swagger/OpenAPI docs |
 
-## 🔐 Security Considerations
+## Security Considerations
 
 - **Role-Based Access Control (RBAC):** Enforced at the API level to ensure Admins and Field Agents only access permitted resources.
 
@@ -90,7 +90,7 @@ The application automatically computes field status (Active/At Risk/Completed) b
 
 - **CORS Configuration:** Configured to allow only trusted frontend origins.
 
-## 🏗️ System Architecture
+## System Architecture
 
 The application follows a client-server architecture:
 
@@ -120,7 +120,7 @@ Planted → Growing → Ready → Harvested
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
 
@@ -236,7 +236,7 @@ npm run dev
 Frontend will run at: http://localhost:5173
 
 
-## 📚 API Documentation
+## API Documentation
 
 Once the backend is running, access interactive API documentation:
 
@@ -265,7 +265,7 @@ Once the backend is running, access interactive API documentation:
 | POST | `/api/auth/admin/create/` | Create admin user | Admin only |
 
 
-## 🧠 Design Decisions
+## Design Decisions
 
 ### 1. Status Logic Implementation
 
@@ -329,7 +329,7 @@ DRF ViewSets reduce boilerplate code
 
 Browsable API for easy debugging
 
-## 📊 Database Schema
+## Database Schema
 
 ### Accounts App (User Model)
 
@@ -389,7 +389,7 @@ Browsable API for easy debugging
 | Simple password validation | Sufficient for demo; can add complexity later |
 
 
-## 📁 Project Structure
+## Project Structure
 ```text
 shamba-records-smartseason-field-monitoring/
 ├── backend/
@@ -540,7 +540,7 @@ curl -X POST https://shamba-records-smartseason-field.onrender.com/api/renew-dat
 ```
 
 
-## 🔮 Future Improvements
+## Future Improvements
 Real-time notifications for at-risk fields
 
 Weather API integration for planting recommendations
@@ -557,7 +557,7 @@ Advanced analytics with ML predictions
 
 Integration with IoT sensors
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -583,14 +583,17 @@ Integration with IoT sensors
 3. Check browser console for frontend errors
 
 
-## 🙏 Acknowledgements
-Shamba Records for the opportunity
+## Acknowledgements
 
-Django REST Framework community
+- Shamba Records for the opportunity
+- Django REST Framework community
+- React and Tailwind CSS communities
+- Render for free tier hosting
+- Uptime Robot for monitoring
+- cron-job.org for automation
 
-React and Tailwind CSS communities
+## Contact
 
-## 📧 Contact
-Developer: Damaris Chege
-GitHub: @Dama5323
-Project Repository: [GitHub Link](https://github.com/Dama5323/shamba-records-smartseason-field-monitoring.git)
+**Developer:** Damaris Chege  
+**GitHub:** [@Dama5323](https://github.com/Dama5323)  
+**Project Repository:** [GitHub Link](https://github.com/Dama5323/shamba-records-smartseason-field-monitoring.git)
