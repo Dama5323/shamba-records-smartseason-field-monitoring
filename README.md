@@ -8,6 +8,15 @@
 
 A comprehensive field monitoring system for tracking crop progress across multiple fields during growing seasons. Built for agricultural coordinators and field agents to manage crops, record observations, and monitor field health in real-time.
 
+## 🔐 Demo Credentials
+
+| Role | Email | Password |
+|------|-------|----------|
+| **Admin** | `adminshambarecords@gmail.com` | `Admin@123` |
+| **Field Agent** | `agentshambarecords@gmail.com` | `agent123` |
+
+> These credentials are pre-configured in the backend. Use them to test both roles.
+
 ## 📋 Table of Contents
 
 - [Overview](#overview)
@@ -84,6 +93,8 @@ The application follows a client-server architecture:
 4. Data is processed and returned to frontend
 
 ### Field Lifecycle Stages
+
+Planted → Growing → Ready → Harvested
 
 ### Status Logic
 
@@ -208,13 +219,13 @@ python manage.py createsuperuser
 #### 2.6 Run Development Server
 ```bash
 python manage.py runserver
-Backend will run at: `http://localhost:8000`
 ```
+Backend will run at: `http://localhost:8000`
 
-### 2. KEY API Endpoints 
+
+### 2. Key API Endpoints
 
 ```markdown
-### Key API Endpoints
 
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
