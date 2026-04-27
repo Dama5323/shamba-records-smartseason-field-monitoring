@@ -172,57 +172,42 @@ export const fieldService = {
     return response.data
   },
 
-  
-
-    getFieldImages: async (fieldId) => {
+  getFieldImages: async (fieldId) => {
     const response = await api.get(`/fields/fields/${fieldId}/images/`)
     return response.data
-    },
+  },
 
-    uploadFieldImage: async (fieldId, imageFile) => {
+  uploadFieldImage: async (fieldId, imageFile) => {
     const formData = new FormData()
     formData.append('image', imageFile)
 
     const response = await api.post(`/fields/fields/${fieldId}/upload_image/`, formData, {
-        headers: {
+      headers: {
         'Content-Type': 'multipart/form-data'
-        }
+      }
     })
     return response.data
-    },
+  },
 
-    deleteFieldImage: async (imageId) => {
+  deleteFieldImage: async (imageId) => {
     const response = await api.delete(`/field-images/${imageId}/`)
     return response.data
-    },
+  },
 
-    assignField: async (fieldId, agentId) => {
+  assignField: async (fieldId, agentId) => {
     const response = await api.post(`/fields/assign/${fieldId}/`, { agent_id: agentId })
     return response.data
-    },
+  },
 
-    unassignField: async (fieldId) => {
+  unassignField: async (fieldId) => {
     const response = await api.post(`/fields/unassign/${fieldId}/`)
     return response.data
-    },
+  },
 
-    getAgents: async () => {
+  getAgents: async () => {
     const response = await api.get('/agents/')
     return response.data
-    },
-}
-
-// Dashboard services
-export const dashboardService = {
-  getStats: async () => {
-    const response = await api.get('/dashboard/stats/')
-    return response.data
   },
-  
-  getRecentFields: async () => {
-    const response = await api.get('/dashboard/recent-fields/')
-    return response.data
-  }
 }
 
 // Admin services
@@ -259,6 +244,29 @@ export const adminService = {
   
   getAgentFields: async (agentId) => {
     const response = await api.get(`/agents/${agentId}/fields/`)
+    return response.data
+  },
+
+  createAgent: async (agentData) => {
+    const response = await api.post('/auth/register/', agentData)
+    return response.data
+  },
+
+  createAdmin: async (adminData) => {
+    const response = await api.post('/auth/admin/create/', adminData)
+    return response.data
+  }
+}
+
+// Dashboard services
+export const dashboardService = {
+  getStats: async () => {
+    const response = await api.get('/dashboard/stats/')
+    return response.data
+  },
+  
+  getRecentFields: async () => {
+    const response = await api.get('/dashboard/recent-fields/')
     return response.data
   }
 }
