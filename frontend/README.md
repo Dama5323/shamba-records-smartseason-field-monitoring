@@ -4,6 +4,15 @@ A modern, responsive field monitoring dashboard for agricultural crop management
 
 **Live Demo:** https://shamba-records-smartseason-field-mo.vercel.app/
 
+## 🔐 Demo Credentials
+
+| Role | Email | Password |
+|------|-------|----------|
+| **Admin** | `adminshambarecords@gmail.com` | `Admin@123` |
+| **Field Agent** | `agentshambarecords@gmail.com` | `agent123` |
+
+> These credentials are pre-configured in the backend. Use them to test both roles.
+
 ## 🛠️ Tech Stack
 
 | Technology | Version | Purpose |
@@ -177,3 +186,19 @@ Displays fields with filters (All/Active/At Risk/Completed) and search.
 
 ### ObservationForm
 Modal/form for adding observations with crop health and stage options.
+
+
+## 🐛 Troubleshooting
+
+### CORS Errors
+Ensure backend CORS settings include your frontend URL:
+```javascript
+CORS_ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:3000"]
+```
+
+## 📧 Contact
+
+**Developer:** Damaris Chege  
+**GitHub:** [@Dama5323](https://github.com/Dama5323)  
+**Email:** deenyashke@gmail.com  
+**Project Repository:** [GitHub Link](https://github.com/Dama5323/shamba-records-smartseason-field-monitoring)

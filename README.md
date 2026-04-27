@@ -369,7 +369,7 @@ Browsable API for easy debugging
 | created_at | DateTimeField | Timestamp |
 
 
-### Assumptions & Trade-offs
+### Assumptions and Trade-offs
 #### Assumptions
 **Gmail-only registration** - Assumed the organization uses Gmail for communication
 
@@ -468,7 +468,7 @@ Add environment variable:
 VITE_API_URL = https://your-backend-url.onrender.com/api
 
 
-## 📡 Monitoring & Automation
+## Monitoring and Automation
 To ensure the application remains accessible 24/7 on Render's free tier, the following monitoring and automation systems are in place:
 
 ### Uptime Monitoring (Uptime Robot)
