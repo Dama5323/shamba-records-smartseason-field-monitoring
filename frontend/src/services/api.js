@@ -271,6 +271,8 @@ export const dashboardService = {
   }
 }
 
+// ... all your existing code ...
+
 // Export services
 export const exportService = {
   exportFieldsCSV: async () => {
@@ -282,6 +284,12 @@ export const exportService = {
     const response = await api.get('/export/observations/csv/', { responseType: 'blob' })
     return response.data
   }
+}
+
+// Observation API 
+export const observationAPI = {
+  getObservations: () => api.get('/observations/'),
+  getObservation: (id) => api.get(`/observations/${id}/`),
 }
 
 export default api

@@ -11,9 +11,10 @@ import {
   MessageSquare,
   Edit,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Eye,
+  Clock
 } from 'lucide-react'
-import StatsCard from './StatsCard'
 import FieldList from '../fields/FieldList'
 import { fieldService, dashboardService } from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
@@ -35,7 +36,7 @@ const AgentDashboard = () => {
     harvested: 0
   })
   const [loading, setLoading] = useState(true)
-  const [recentActivities, setRecentActivities] = useState([])
+  const [recentObservations, setRecentObservations] = useState([])
   const [creatingDemo, setCreatingDemo] = useState(false)
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -44,7 +45,7 @@ const AgentDashboard = () => {
     fetchMyFields()
     fetchDashboardStats()
     checkAndCreateDemoFields()
-    fetchRecentActivities()
+    fetchRecentObservations()
   }, [])
   
   const fetchMyFields = async () => {
@@ -97,12 +98,54 @@ const AgentDashboard = () => {
     }
   }
   
-  const fetchRecentActivities = async () => {
-    setRecentActivities([
-      { id: 1, action: 'Added observation', field: 'Demo Maize Field', time: '2 hours ago', icon: MessageSquare },
-      { id: 2, action: 'Updated stage to Ready', field: 'Demo Rice Paddy', time: '1 day ago', icon: Edit },
-      { id: 3, action: 'Created field', field: 'Demo Wheat Field', time: '3 days ago', icon: Plus },
-    ])
+  // Fetch observations directly from fields
+  const fetchRecentObservations = async () => {
+    try {
+      console.log('Fetching observations from fields...')
+      
+      const fieldsResponse = await fieldService.getMyFields()
+      
+      let fieldsData = []
+      if (Array.isArray(fieldsResponse)) {
+        fieldsData = fieldsResponse
+      } else if (fieldsResponse && fieldsResponse.fields && Array.isArray(fieldsResponse.fields)) {
+        fieldsData = fieldsResponse.fields
+      } else {
+        fieldsData = []
+      }
+      
+      console.log('Fields found:', fieldsData.length)
+      
+      let allObservations = []
+      for (const field of fieldsData) {
+        try {
+          const fieldObs = await fieldService.getFieldObservations(field.id)
+          if (Array.isArray(fieldObs) && fieldObs.length > 0) {
+            console.log(`Found ${fieldObs.length} observations for field: ${field.name}`)
+            allObservations = [...allObservations, ...fieldObs.map(obs => ({
+              ...obs,
+              field_name: field.name,
+              field_id: field.id
+            }))]
+          }
+        } catch (err) {
+          console.error(`Error fetching observations for field ${field.id}:`, err)
+        }
+      }
+      
+      console.log('Total observations found:', allObservations.length)
+      
+      const sortedObservations = allObservations
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 5)
+      
+      console.log('Recent observations (first 5):', sortedObservations)
+      setRecentObservations(sortedObservations)
+      
+    } catch (error) {
+      console.error('Error fetching observations:', error)
+      setRecentObservations([])
+    }
   }
   
   const createDemoFields = async () => {
@@ -111,6 +154,7 @@ const AgentDashboard = () => {
       const response = await api.post('/create-demo-fields/')
       toast.success(response.data.message)
       fetchMyFields()
+      fetchRecentObservations()
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create demo fields')
     } finally {
@@ -143,6 +187,20 @@ const AgentDashboard = () => {
   
   const userDisplayName = user?.first_name || user?.username || user?.email?.split('@')[0] || 'User'
   
+  const formatRelativeTime = (dateString) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now - date
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+    
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`
+    if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
+    return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`
+  }
+  
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -156,11 +214,10 @@ const AgentDashboard = () => {
       className="min-h-screen bg-cover bg-center bg-fixed"
       style={{ backgroundImage: `url(${HAPPY_FARMER_BG})` }}
     >
-      {/* Semi-transparent overlay for better text readability */}
       <div className="min-h-screen bg-black/30 backdrop-blur-sm">
         <div className="space-y-8 p-6 max-w-7xl mx-auto">
           
-          {/* Welcome Header with overlay */}
+          {/* Welcome Header */}
           <div className="bg-gradient-to-r from-green-800/90 to-emerald-800/90 backdrop-blur-sm rounded-2xl p-6 text-white shadow-sm">
             <div className="flex justify-between items-start flex-wrap gap-4">
               <div>
@@ -179,7 +236,7 @@ const AgentDashboard = () => {
             </div>
           </div>
           
-          {/* Seasonal Insights Card - New! */}
+          {/* Seasonal Insights Card */}
           <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-5 shadow-sm border border-white/20">
             <div className="flex flex-col md:flex-row gap-5 items-center">
               <img 
@@ -221,26 +278,10 @@ const AgentDashboard = () => {
             ))}
           </div>
           
-          {/* Quick Actions Section */}
+          {/* Quick Actions Section - Agent only (3 actions, NO "Add Field") */}
           <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 p-5">
             <h3 className="text-base font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <button
-                onClick={() => navigate('/fields/create')}
-                className="md:col-span-1 flex items-center justify-between p-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="bg-white/20 rounded-lg p-2">
-                    <Plus className="h-5 w-5" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-semibold">Add Field</p>
-                    <p className="text-xs text-emerald-100">Create new field</p>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 opacity-70" />
-              </button>
-
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button
                 onClick={() => navigate('/fields')}
                 className="flex items-center justify-between p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] border border-blue-100"
@@ -344,29 +385,75 @@ const AgentDashboard = () => {
             </div>
           </div>
           
-          {/* Recent Activity */}
-          {recentActivities.length > 0 && (
-            <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 p-5">
-              <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center">
-                <Calendar className="h-4 w-4 mr-2 text-green-600" />
-                Recent Activity
-              </h3>
-              <div className="space-y-2">
-                {recentActivities.map(activity => (
-                  <div key={activity.id} className="flex items-center space-x-3 p-3 bg-white border border-gray-100 rounded-lg hover:shadow-sm transition-all duration-200">
-                    <div className="bg-gray-100 rounded-lg p-2">
-                      <activity.icon className="h-4 w-4 text-gray-600" />
+          {/* Recent Observations Section */}
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 p-5">
+            <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center">
+              <Clock className="h-4 w-4 mr-2 text-green-600" />
+              Recent Observations
+            </h3>
+            
+            {recentObservations.length > 0 ? (
+              <div className="space-y-3">
+                {recentObservations.map((obs) => (
+                  <div key={obs.id} className="flex items-start space-x-3 p-3 bg-white border border-gray-100 rounded-lg hover:shadow-sm transition-all duration-200">
+                    <div className="bg-green-100 rounded-lg p-2 flex-shrink-0">
+                      <MessageSquare className="h-4 w-4 text-green-600" />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                      <p className="text-xs text-gray-500">{activity.field}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap justify-between items-start gap-2">
+                        <p className="text-sm font-medium text-gray-900">
+                          {obs.field_name || `Field #${obs.field_id}`}
+                        </p>
+                        <span className="text-xs text-gray-400 flex-shrink-0">
+                          {formatRelativeTime(obs.created_at)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                        {obs.note}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {obs.crop_health && (
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            obs.crop_health === 'excellent' ? 'bg-green-100 text-green-700' :
+                            obs.crop_health === 'good' ? 'bg-blue-100 text-blue-700' :
+                            obs.crop_health === 'fair' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            Health: {obs.crop_health}
+                          </span>
+                        )}
+                        {obs.stage_at_observation && (
+                          <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">
+                            Stage: {obs.stage_at_observation}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <span className="text-xs text-gray-400">{activity.time}</span>
+                    <button
+                      onClick={() => navigate(`/fields/${obs.field_id || obs.field}`)}
+                      className="text-green-600 hover:text-green-700 flex-shrink-0"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="text-center py-8">
+                <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">No observations yet</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Add an observation from any of your fields
+                </p>
+                <button
+                  onClick={() => navigate('/fields')}
+                  className="mt-3 text-sm text-green-600 hover:text-green-700"
+                >
+                  Go to fields →
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
