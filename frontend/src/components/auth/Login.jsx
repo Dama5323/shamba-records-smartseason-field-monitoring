@@ -32,11 +32,11 @@ const Login = () => {
 
   const fillDemoCredentials = (type) => {
     if (type === 'admin') {
-      setEmail('admin@shambarecords.com');
+      setEmail('adminshambarecords@gmail.com');
       setPassword('Admin@123');
     } else {
-      setEmail('agent@shambarecords.com');
-      setPassword('Agent@123');
+      setEmail('agentshambarecords@gmail.com');
+      setPassword('agent123');
     }
   };
 
@@ -44,7 +44,6 @@ const Login = () => {
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
-          {/* Logo Image - Replaced emoji */}
           <div className="flex justify-center mb-4">
             <img 
               src={LOGO_URL} 
@@ -127,7 +126,7 @@ const Login = () => {
               </div>
               <div className="text-left">
                 <p className="text-sm font-semibold text-gray-800">Admin Demo</p>
-                <p className="text-xs text-gray-500">Full access</p>
+                <p className="text-xs text-gray-500">adminshambarecords@gmail.com</p>
               </div>
             </button>
             <button
@@ -139,9 +138,14 @@ const Login = () => {
               </div>
               <div className="text-left">
                 <p className="text-sm font-semibold text-gray-800">Agent Demo</p>
-                <p className="text-xs text-gray-500">Field access only</p>
+                <p className="text-xs text-gray-500">agentshambarecords@gmail.com</p>
               </div>
             </button>
+          </div>
+          <div className="mt-3 text-center">
+            <p className="text-xs text-gray-500">
+              Password: <span className="font-mono">Admin@123</span> (Admin) / <span className="font-mono">agent123</span> (Agent)
+            </p>
           </div>
         </div>
 
