@@ -16,19 +16,31 @@ import {
   LogIn,
   UserPlus,
   FileText,
-  AlertTriangle
+  AlertTriangle,
+  Info,
+  Heart,
+  Calendar
 } from 'lucide-react'
 
 const LandingPage = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
+  const scrollToSection = (sectionId) => {
+    const section = document.getElementById(sectionId)
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' })
+    }
+    setIsMobileMenuOpen(false)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 via-white to-green-50">
-      {/* Navigation Bar */}
+      {/* Navigation Bar - Public Friendly */}
       <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
+            {/* Logo */}
+            <Link to="/" className="flex items-center space-x-2">
               <div className="h-9 w-9 bg-gradient-to-br from-green-600 to-green-800 rounded-lg flex items-center justify-center">
                 <Sprout className="h-5 w-5 text-white" />
               </div>
@@ -38,16 +50,17 @@ const LandingPage = () => {
                 </span>
                 <p className="text-xs text-gray-500 -mt-1">SmartSeason</p>
               </div>
-            </div>
+            </Link>
             
-            {/* Desktop Navigation */}
+            {/* Desktop Navigation - PUBLIC ONLY */}
             <div className="hidden md:flex items-center space-x-6">
-              <Link to="/" className="text-gray-600 hover:text-green-600 transition-colors">Home</Link>
-              <Link to="/dashboard" className="text-gray-600 hover:text-green-600 transition-colors">Dashboard</Link>
-              <Link to="/fields" className="text-gray-600 hover:text-green-600 transition-colors">Fields</Link>
-              <Link to="/at-risk" className="text-gray-600 hover:text-green-600 transition-colors">At Risk</Link>
+              <button onClick={() => scrollToSection('home')} className="text-gray-600 hover:text-green-600 transition-colors">Home</button>
+              <button onClick={() => scrollToSection('about')} className="text-gray-600 hover:text-green-600 transition-colors">About</button>
+              <button onClick={() => scrollToSection('features')} className="text-gray-600 hover:text-green-600 transition-colors">Features</button>
+              <button onClick={() => scrollToSection('contact')} className="text-gray-600 hover:text-green-600 transition-colors">Contact</button>
             </div>
             
+            {/* Auth Buttons */}
             <div className="hidden md:flex items-center space-x-3">
               <Link
                 to="/register"
@@ -77,24 +90,26 @@ const LandingPage = () => {
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation - PUBLIC ONLY */}
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-gray-200 bg-white">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              <Link to="/" className="block px-3 py-2 text-gray-600 hover:bg-green-50 hover:text-green-600 rounded-lg">Home</Link>
-              <Link to="/dashboard" className="block px-3 py-2 text-gray-600 hover:bg-green-50 hover:text-green-600 rounded-lg">Dashboard</Link>
-              <Link to="/fields" className="block px-3 py-2 text-gray-600 hover:bg-green-50 hover:text-green-600 rounded-lg">Fields</Link>
-              <Link to="/at-risk" className="block px-3 py-2 text-gray-600 hover:bg-green-50 hover:text-green-600 rounded-lg">At Risk</Link>
+              <button onClick={() => scrollToSection('home')} className="block w-full text-left px-3 py-2 text-gray-600 hover:bg-green-50 hover:text-green-600 rounded-lg">Home</button>
+              <button onClick={() => scrollToSection('about')} className="block w-full text-left px-3 py-2 text-gray-600 hover:bg-green-50 hover:text-green-600 rounded-lg">About</button>
+              <button onClick={() => scrollToSection('features')} className="block w-full text-left px-3 py-2 text-gray-600 hover:bg-green-50 hover:text-green-600 rounded-lg">Features</button>
+              <button onClick={() => scrollToSection('contact')} className="block w-full text-left px-3 py-2 text-gray-600 hover:bg-green-50 hover:text-green-600 rounded-lg">Contact</button>
               <div className="pt-4 space-y-2 border-t border-gray-100 mt-2">
                 <Link
                   to="/register"
                   className="block w-full px-3 py-2 bg-green-600 text-white rounded-lg text-center hover:bg-green-700"
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Register
                 </Link>
                 <Link
                   to="/login"
                   className="block w-full px-3 py-2 border border-green-600 text-green-600 rounded-lg text-center hover:bg-green-50"
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Sign In
                 </Link>
@@ -104,8 +119,8 @@ const LandingPage = () => {
         )}
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      {/* Hero Section - id="home" */}
+      <section id="home" className="relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -124,7 +139,7 @@ const LandingPage = () => {
                   Get Started Free
                 </Link>
                 <button 
-                  onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })}
+                  onClick={() => scrollToSection('about')}
                   className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
                 >
                   Learn More
@@ -186,7 +201,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* About SmartSeason */}
+      {/* About SmartSeason - id="about" */}
       <section id="about" className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
@@ -234,8 +249,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Why SmartSeason */}
-      <section className="py-16 bg-gradient-to-b from-green-50 to-white">
+      {/* Features Section - id="features" */}
+      <section id="features" className="py-16 bg-gradient-to-b from-green-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Farmers Need SmartSeason</h2>
@@ -245,7 +260,7 @@ const LandingPage = () => {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
               <div className="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
                 <AlertTriangle className="h-6 w-6 text-yellow-600" />
               </div>
@@ -255,7 +270,7 @@ const LandingPage = () => {
               </p>
             </div>
             
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
               <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                 <FileText className="h-6 w-6 text-blue-600" />
               </div>
@@ -265,7 +280,7 @@ const LandingPage = () => {
               </p>
             </div>
             
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
               <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
                 <Users className="h-6 w-6 text-purple-600" />
               </div>
@@ -357,6 +372,16 @@ const LandingPage = () => {
               <p className="text-xs text-gray-400 text-center mt-2">Demo: agentshambarecords@gmail.com / agent123</p>
             </div>
           </div>
+          
+          {/* Call to Action */}
+          <div className="text-center mt-12">
+            <p className="text-gray-600">
+              Already have an account?{' '}
+              <Link to="/login" className="text-green-600 hover:text-green-700 font-medium">
+                Sign in here
+              </Link>
+            </p>
+          </div>
         </div>
       </section>
 
@@ -389,8 +414,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Footer - SmartSeason Project Focus */}
-      <footer className="bg-gray-900 text-gray-400 py-12">
+      {/* Footer - id="contact" */}
+      <footer id="contact" className="bg-gray-900 text-gray-400 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-3 gap-8">
             {/* Company Info */}
@@ -408,38 +433,39 @@ const LandingPage = () => {
               </p>
             </div>
             
-            {/* SmartSeason Services */}
+            {/* Quick Links */}
             <div>
-              <h4 className="text-white font-semibold mb-4">SmartSeason Services</h4>
+              <h4 className="text-white font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2 text-sm">
-                <li className="flex items-center space-x-2">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
-                  <span>Real-Time Field Monitoring</span>
+                <li>
+                  <button onClick={() => scrollToSection('home')} className="hover:text-green-400 transition">
+                    Home
+                  </button>
                 </li>
-                <li className="flex items-center space-x-2">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
-                  <span>Crop Growth Tracking</span>
+                <li>
+                  <button onClick={() => scrollToSection('about')} className="hover:text-green-400 transition">
+                    About
+                  </button>
                 </li>
-                <li className="flex items-center space-x-2">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
-                  <span>Risk Detection & Alerts</span>
+                <li>
+                  <button onClick={() => scrollToSection('features')} className="hover:text-green-400 transition">
+                    Features
+                  </button>
                 </li>
-                <li className="flex items-center space-x-2">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
-                  <span>Agent Assignment System</span>
+                <li>
+                  <Link to="/login" className="hover:text-green-400 transition">
+                    Sign In
+                  </Link>
                 </li>
-                <li className="flex items-center space-x-2">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
-                  <span>Observation & Notes</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
-                  <span>Data Analytics & Reports</span>
+                <li>
+                  <Link to="/register" className="hover:text-green-400 transition">
+                    Register
+                  </Link>
                 </li>
               </ul>
             </div>
             
-            {/* Contact with Map */}
+            {/* Contact & Location */}
             <div>
               <h4 className="text-white font-semibold mb-4">Contact & Location</h4>
               <ul className="space-y-2 text-sm mb-4">
@@ -449,11 +475,11 @@ const LandingPage = () => {
                 </li>
                 <li className="flex items-center space-x-2">
                   <Mail className="h-4 w-4 text-green-500" />
-                  <a href="mailto:info@shambarecords.com" className="hover:text-white">info@shambarecords.com</a>
+                  <a href="mailto:info@shambarecords.com" className="hover:text-white transition">info@shambarecords.com</a>
                 </li>
                 <li className="flex items-center space-x-2">
                   <Phone className="h-4 w-4 text-green-500" />
-                  <a href="tel:+254732693963" className="hover:text-white">+254 732 693 963</a>
+                  <a href="tel:+254732693963" className="hover:text-white transition">+254 732 693 963</a>
                 </li>
               </ul>
               
@@ -472,7 +498,7 @@ const LandingPage = () => {
                   ></iframe>
                 </div>
                 <p className="text-xs text-gray-500 mt-2 text-center">
-                  <a href="https://maps.google.com/?q=Mitsumi+Business+Park+Westlands+Nairobi" target="_blank" rel="noopener noreferrer" className="hover:text-green-400">
+                  <a href="https://maps.google.com/?q=Mitsumi+Business+Park+Westlands+Nairobi" target="_blank" rel="noopener noreferrer" className="hover:text-green-400 transition">
                     View on Google Maps →
                   </a>
                 </p>
@@ -480,20 +506,20 @@ const LandingPage = () => {
             </div>
           </div>
           
-          {/* Developer Credit */}
+          {/* Divider */}
           <div className="border-t border-gray-800 mt-8 pt-8">
             <div className="text-center">
               <p className="text-sm text-gray-500 mb-2">
-                Created for Shamba Records Software Internship Application
+                Created for Shamba Records Software Engineer Internship Application
               </p>
               <p className="text-gray-500">Designed & Developed by</p>
               <p className="text-green-500 font-medium text-lg">Damaris Chege</p>
               <div className="flex items-center justify-center space-x-4 mt-2">
-                <a href="mailto:deenyashke@gmail.com" className="text-sm hover:text-green-400">
+                <a href="mailto:deenyashke@gmail.com" className="text-sm hover:text-green-400 transition">
                   deenyashke@gmail.com
                 </a>
                 <span className="text-gray-600">|</span>
-                <a href="tel:+254708729553" className="text-sm hover:text-green-400">
+                <a href="tel:+254708729553" className="text-sm hover:text-green-400 transition">
                   +254 708 729 553
                 </a>
               </div>
