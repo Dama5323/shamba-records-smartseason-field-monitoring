@@ -1,16 +1,12 @@
-// src/components/layout/DashboardLayout.jsx
 import React from 'react';
 import Sidebar from './Sidebar';
-import Header from './Header';
 
-const DashboardLayout = ({ children, user }) => {
+const DashboardLayout = ({ children }) => {
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar user={user} />
-      
-      <main className="flex-1 overflow-y-auto ml-72">
-        <Header user={user} />
-        <div className="p-8 space-y-8">
+    <div className="min-h-screen bg-gray-50">
+      <Sidebar />
+      <main className="md:ml-64 transition-all duration-300">
+        <div className="p-4 md:p-6">
           {children}
         </div>
       </main>

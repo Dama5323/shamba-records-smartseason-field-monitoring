@@ -5,7 +5,6 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import Login from './components/auth/Login'
 import Register from './components/auth/Register'
-import Navbar from './components/common/Navbar'
 import AdminDashboard from './components/dashboard/AdminDashboard'
 import AgentDashboard from './components/dashboard/AgentDashboard'
 import FieldList from './components/fields/FieldList.jsx'
@@ -17,6 +16,8 @@ import { fieldService } from './services/api'
 import { useEffect, useState } from 'react'
 import Profile from './components/profile/Profile'
 import LandingPage from './components/landing/LandingPage'
+import DashboardLayout from './components/layout/DashboardLayout'
+import ObservationsPage from './components/observations/ObservationsPage';
 
 // Dashboard wrapper component
 const DashboardWrapper = () => {
@@ -35,7 +36,6 @@ const FieldsWrapper = () => {
       try {
         if (isAdmin) {
           const data = await fieldService.getAllFields()
-          // Handle response format
           if (Array.isArray(data)) {
             setFields(data)
           } else if (data && data.results && Array.isArray(data.results)) {
@@ -45,7 +45,6 @@ const FieldsWrapper = () => {
           }
         } else {
           const response = await fieldService.getMyFields()
-          // Handle response format - API returns {total_fields: 0, fields: []}
           if (response && response.fields && Array.isArray(response.fields)) {
             setFields(response.fields)
           } else if (Array.isArray(response)) {
@@ -74,10 +73,6 @@ const FieldsWrapper = () => {
   
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">All Fields</h1>
-        <p className="text-gray-600 mt-1">Manage and monitor all agricultural fields</p>
-      </div>
       <FieldList fields={fields} showActions />
     </div>
   )
@@ -85,7 +80,7 @@ const FieldsWrapper = () => {
 
 // Main App content
 const AppContent = () => {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   
   // If not authenticated, show landing page with login/register routes
   if (!isAuthenticated) {
@@ -99,54 +94,80 @@ const AppContent = () => {
     )
   }
   
-  // If authenticated, show dashboard with navbar
+  // If authenticated, show dashboard with sidebar layout
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={
+    <DashboardLayout>
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route 
+          path="/dashboard" 
+          element={
             <ProtectedRoute>
               <DashboardWrapper />
             </ProtectedRoute>
-          } />
-          <Route path="/fields" element={
+          } 
+        />
+        <Route 
+          path="/fields" 
+          element={
             <ProtectedRoute>
               <FieldsWrapper />
             </ProtectedRoute>
-          } />
-          <Route path="/fields/create" element={
+          } 
+        />
+        <Route 
+          path="/fields/create" 
+          element={
             <ProtectedRoute requiredRole="admin">
               <CreateField />
             </ProtectedRoute>
-          } />
-          <Route path="/fields/:id" element={
+          } 
+        />
+        <Route 
+          path="/fields/:id" 
+          element={
             <ProtectedRoute>
               <FieldDetail />
             </ProtectedRoute>
-          } />
-          <Route path="/at-risk" element={
+          } 
+        />
+        <Route 
+          path="/observations" 
+          element={
+            <ProtectedRoute>
+              <ObservationsPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/at-risk" 
+          element={
             <ProtectedRoute>
               <AtRiskFields />
             </ProtectedRoute>
-          } />
-          <Route path="/users" element={
+          } 
+        />
+        <Route 
+          path="/users" 
+          element={
             <ProtectedRoute requiredRole="admin">
               <UserManagement />
             </ProtectedRoute>
-          } />
-          <Route path="/profile" element={
+          } 
+        />
+        <Route 
+          path="/profile" 
+          element={
             <ProtectedRoute>
               <Profile />
             </ProtectedRoute>
-          } />
-          <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/register" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </main>
-    </div>
+          } 
+        />
+        <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/register" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </DashboardLayout>
   )
 }
 
