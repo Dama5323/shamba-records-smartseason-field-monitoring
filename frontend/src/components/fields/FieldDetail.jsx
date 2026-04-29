@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { format, isValid, parseISO } from 'date-fns'
 import { 
   ArrowLeft, 
@@ -143,6 +143,10 @@ const FieldDetail = () => {
       
       await fieldService.addObservation(id, observationData)
       toast.success('Observation added successfully')
+      
+      // Dispatch event to refresh dashboard
+      window.dispatchEvent(new Event('observationAdded'))
+      
       setNewObservation({
         note: '',
         crop_health: 'good'
@@ -428,13 +432,25 @@ const FieldDetail = () => {
       <div className="card">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Observations & Notes</h2>
-          <button
-            onClick={() => setShowObservationForm(!showObservationForm)}
-            className="btn-primary flex items-center space-x-2 text-sm"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Observation</span>
-          </button>
+          <div className="flex gap-2">
+            {/* Existing Add Observation button */}
+            <button
+              onClick={() => setShowObservationForm(!showObservationForm)}
+              className="btn-primary flex items-center space-x-2 text-sm"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Observation</span>
+            </button>
+            
+            {/* NEW: Add Observation via dedicated page button */}
+            <Link
+              to={`/fields/${field.id}/observations/create`}
+              className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition flex items-center gap-2"
+            >
+              <Camera className="h-4 w-4" />
+              <span>Add with Photos</span>
+            </Link>
+          </div>
         </div>
         
         {/* Add Observation Form */}

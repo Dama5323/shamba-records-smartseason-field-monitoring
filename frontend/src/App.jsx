@@ -18,6 +18,7 @@ import Profile from './components/profile/Profile'
 import LandingPage from './components/landing/LandingPage'
 import DashboardLayout from './components/layout/DashboardLayout'
 import ObservationsPage from './components/observations/ObservationsPage';
+import CreateObservation from './components/observations/CreateObservation';
 
 // Dashboard wrapper component
 const DashboardWrapper = () => {
@@ -160,6 +161,14 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/fields/:fieldId/observations/create" 
+          element={
+            <ProtectedRoute>
+              <CreateObservation />
             </ProtectedRoute>
           } 
         />

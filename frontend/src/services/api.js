@@ -288,8 +288,30 @@ export const exportService = {
 
 // Observation API 
 export const observationAPI = {
-  getObservations: () => api.get('/observations/'),
-  getObservation: (id) => api.get(`/observations/${id}/`),
-}
+  getObservations: () => 
+    api.get('/observations/').then(res => res.data),
+  
+  getObservation: (id) => 
+    api.get(`/observations/${id}/`).then(res => res.data),
+  
+  createObservation: (data) => {
+    // If data is FormData, send it directly, otherwise as JSON
+    if (data instanceof FormData) {
+      return api.post('/observations/', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      }).then(res => res.data);
+    }
+    return api.post('/observations/', data).then(res => res.data);
+  },
+  
+  updateObservation: (id, data) => 
+    api.patch(`/observations/${id}/`, data).then(res => res.data),
+  
+  deleteObservation: (id) => 
+    api.delete(`/observations/${id}/`).then(res => res.data),
+  
+  getFieldObservations: (fieldId) => 
+    api.get(`/fields/${fieldId}/observations/`).then(res => res.data),
+};
 
 export default api
