@@ -1,13 +1,14 @@
+// App.jsx
 import React from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'  
 import { Toaster } from 'react-hot-toast'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { useAuth } from './contexts/AuthContext'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import Login from './components/auth/Login'
-import Register from './components/auth/Register'
+import Register from './components/auth/SignUp'
 import AdminDashboard from './components/dashboard/AdminDashboard'
 import AgentDashboard from './components/dashboard/AgentDashboard'
-import FieldList from './components/fields/FieldList.jsx'
+import FieldList from './components/fields/FieldList'
 import FieldDetail from './components/fields/FieldDetail'
 import CreateField from './components/fields/CreateField'
 import AtRiskFields from './components/fields/AtRiskFields'
@@ -17,13 +18,49 @@ import { useEffect, useState } from 'react'
 import Profile from './components/profile/Profile'
 import LandingPage from './components/landing/LandingPage'
 import DashboardLayout from './components/layout/DashboardLayout'
-import ObservationsPage from './components/observations/ObservationsPage';
-import CreateObservation from './components/observations/CreateObservation';
+import ObservationsPage from './components/observations/ObservationsPage'
+import CreateObservation from './components/observations/CreateObservation'
 
 // Dashboard wrapper component
 const DashboardWrapper = () => {
   const { isAdmin } = useAuth()
   return isAdmin ? <AdminDashboard /> : <AgentDashboard />
+}
+
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center p-8">
+            <h2 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h2>
+            <p className="text-gray-600 mb-4">{this.state.error?.message}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
 }
 
 // Fields wrapper component
@@ -182,10 +219,10 @@ const AppContent = () => {
 
 function App() {
   return (
-    <AuthProvider>
+    <ErrorBoundary>
       <Toaster position="top-right" />
       <AppContent />
-    </AuthProvider>
+    </ErrorBoundary>
   )
 }
 

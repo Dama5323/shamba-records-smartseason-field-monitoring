@@ -59,6 +59,25 @@ export const AuthProvider = ({ children }) => {
     }
   }
   
+  // Google Sign Up
+  const signUpWithGoogle = async (accessToken) => {
+    try {
+      const data = await authService.googleLogin(accessToken)
+      if (data.access) {
+        setUser(data.user)
+        localStorage.setItem('user', JSON.stringify(data.user))
+        toast.success(data.is_new_user ? 'Account created with Google!' : 'Welcome back!')
+        return { success: true, data }
+      }
+      return { success: false, error: 'No access token received' }
+    } catch (error) {
+      console.error('Google signup error:', error)
+      const message = error.response?.data?.error || 'Google authentication failed'
+      toast.error(message)
+      return { success: false, error: message }
+    }
+  }
+  
   const logout = () => {
     authService.logout()
     setUser(null)
@@ -85,6 +104,7 @@ export const AuthProvider = ({ children }) => {
     setUser,
     login,
     register,
+    signUpWithGoogle,  // Add Google sign up here
     logout,
     updateProfile,
     isAuthenticated: !!user,

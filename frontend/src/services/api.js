@@ -61,10 +61,18 @@ export const authService = {
     return response.data
   },
   
-  register: async (userData) => {
-    const response = await api.post('/auth/register/', userData)
+  googleLogin: async (accessToken) => {
+    const response = await api.post('/auth/google-login/', {
+      access_token: accessToken
+    })
+    if (response.data.access) {
+      localStorage.setItem('access_token', response.data.access)
+      localStorage.setItem('refresh_token', response.data.refresh)
+      localStorage.setItem('user', JSON.stringify(response.data.user))
+    }
     return response.data
   },
+  
   
   logout: () => {
     localStorage.removeItem('access_token')
@@ -271,8 +279,6 @@ export const dashboardService = {
   }
 }
 
-// ... all your existing code ...
-
 // Export services
 export const exportService = {
   exportFieldsCSV: async () => {
@@ -312,6 +318,6 @@ export const observationAPI = {
   
   getFieldObservations: (fieldId) => 
     api.get(`/fields/${fieldId}/observations/`).then(res => res.data),
-};
+}
 
 export default api
