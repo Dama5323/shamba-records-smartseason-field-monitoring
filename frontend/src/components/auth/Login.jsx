@@ -1,8 +1,10 @@
 // src/components/auth/Login.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock, AlertCircle, UserCircle, Shield } from 'lucide-react';
+import api from '../../services/api';
+import toast from 'react-hot-toast';
 
 // Logo image URL
 const LOGO_URL = 'https://res.cloudinary.com/dzyqof9it/image/upload/v1777133180/shamba_n7wgns.jpg';
@@ -12,9 +14,21 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // Check for verification message when page loads
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('verification_sent')) {
+      toast.success('Verification email sent! Please check your inbox.', { duration: 5000 });
+    }
+    if (params.get('verified')) {
+      toast.success('Email verified successfully! You can now login.', { duration: 5000 });
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,6 +42,24 @@ const Login = () => {
       setError(result.error || 'Invalid email or password');
     }
     setLoading(false);
+  };
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      toast.error('Please enter your email address first');
+      return;
+    }
+    
+    setResending(true);
+    try {
+      await api.post('/auth/resend-verification/', { email });
+      toast.success('Verification email resent! Please check your inbox.');
+    } catch (error) {
+      const message = error.response?.data?.error || 'Failed to resend verification email';
+      toast.error(message);
+    } finally {
+      setResending(false);
+    }
   };
 
   const fillDemoCredentials = (type) => {
@@ -107,11 +139,22 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="btn-primary w-full py-3 text-lg disabled:opacity-50 rounded-xl"
+            className="btn-primary w-full py-3 text-lg disabled:opacity-50 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition"
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
+
+        {/* Resend Verification Email Button */}
+        <div className="mt-4 text-center">
+          <button
+            onClick={handleResendVerification}
+            disabled={resending}
+            className="text-sm text-emerald-600 hover:text-emerald-700 transition disabled:opacity-50"
+          >
+            {resending ? 'Sending...' : "Didn't receive verification email? Click here to resend"}
+          </button>
+        </div>
 
         {/* Demo Credentials Section - Full width buttons */}
         <div className="mt-8 pt-6 border-t border-gray-200">

@@ -117,7 +117,6 @@ const SignUp = () => {
               
               if (token && user) {
                 addDebug('✅ Both token and user stored, navigating to dashboard via React Router', 'success')
-                // IMPORTANT: Use React Router navigate, NOT window.location
                 navigate('/dashboard')
               } else {
                 addDebug('❌ Storage verification failed - missing token or user', 'error')
@@ -211,11 +210,20 @@ const SignUp = () => {
       });
       
       if (result.success) {
-        addDebug('✅ Email registration successful, navigating to login', 'success');
-        navigate('/login');
+        if (result.data?.requires_verification) {
+          toast.success('Account created! Please check your email to verify your account.');
+          navigate('/login?verification_sent=true');
+        } else {
+          toast.success('Registration successful! You can now login.');
+          navigate('/login');
+        }
       } else {
         addDebug(`❌ Email registration failed: ${result.error}`, 'error');
+        toast.error(result.error || 'Registration failed');
       }
+    } catch (error) {
+      addDebug(`❌ Email registration error: ${error.message}`, 'error');
+      toast.error('Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }

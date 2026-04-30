@@ -20,6 +20,7 @@ import LandingPage from './components/landing/LandingPage'
 import DashboardLayout from './components/layout/DashboardLayout'
 import ObservationsPage from './components/observations/ObservationsPage'
 import CreateObservation from './components/observations/CreateObservation'
+import VerifyEmail from './components/auth/VerifyEmail';
 
 // Dashboard wrapper component
 const DashboardWrapper = () => {
@@ -127,6 +128,7 @@ const AppContent = () => {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email/:uidb64/:token/" element={<VerifyEmail />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     )
