@@ -127,14 +127,12 @@ class GoogleLoginView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+
 class RegisterView(APIView):
     permission_classes = [AllowAny]
     
     def post(self, request):
         print("=== REGISTRATION ATTEMPT ===")
-        
-        # Check if it's Google signup (no password needed)
-        is_google_signup = request.data.get('is_google', False)
         
         email = request.data.get('email')
         username = request.data.get('username')
@@ -142,119 +140,64 @@ class RegisterView(APIView):
         role = request.data.get('role', 'agent')
         first_name = request.data.get('first_name', '')
         last_name = request.data.get('last_name', '')
-        phone_number = request.data.get('phone_number', '')
-        location = request.data.get('location', '')
-        farm_name = request.data.get('farm_name', '')
-        
-        # Debug logging
-        print(f"Email: {email}")
-        print(f"Username: {username}")
-        print(f"Is Google Signup: {is_google_signup}")
-        
-        # CRITICAL: Prevent admin registration
-        if role == 'admin':
-            return Response({
-                'error': 'Admin accounts cannot be created through registration.'
-            }, status=status.HTTP_403_FORBIDDEN)
-        
-        # Force role to agent
-        role = 'agent'
-        
-        # For Google signup, generate a random secure password
-        if is_google_signup:
-            alphabet = string.ascii_letters + string.digits + string.punctuation
-            password = ''.join(secrets.choice(alphabet) for i in range(20))
-            print(f"Generated secure password for Google user")
         
         # Validation
-        if not email or not username:
+        if not email or not username or not password:
             return Response({
-                'error': 'Email and username are required'
+                'error': 'Email, username, and password are required'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # For non-Google signups, password is required
-        if not is_google_signup and not password:
-            return Response({
-                'error': 'Password is required'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Check existing users
         if User.objects.filter(email=email).exists():
             return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
         
         if User.objects.filter(username=username).exists():
             return Response({'error': 'Username already exists'}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Email validation (only Gmail for now)
-        if not email.endswith('@gmail.com'):
-            return Response({'error': 'Only Gmail accounts are allowed'}, 
-                          status=status.HTTP_400_BAD_REQUEST)
-        
-        # Password validation for non-Google signups
-        if not is_google_signup and len(password) < 8:
+        if len(password) < 8:
             return Response({'error': 'Password must be at least 8 characters'}, 
                           status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            # Create user
+            # Create user (INACTIVE until email verification)
             user = User(
                 email=email,
                 username=username,
                 role=role,
                 first_name=first_name,
                 last_name=last_name,
-                phone_number=phone_number,
-                location=location,
-                farm_name=farm_name
+                is_active=False,  # IMPORTANT: User is inactive until email verification
+                is_email_verified=False
             )
             user.set_password(password)
-            user.is_active = True
-            user.is_email_verified = True  # Auto-verify for all signups
             user.save()
             
             print(f"✅ User created: {user.email} (ID: {user.id})")
             
-            # If Google signup, log them in immediately
-            if is_google_signup:
-                refresh = RefreshToken.for_user(user)
-                return Response({
-                    'message': 'Google signup successful!',
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
-                    'user': {
-                        'id': user.id,
-                        'email': user.email,
-                        'username': user.username,
-                        'role': user.role,
-                        'first_name': user.first_name,
-                        'last_name': user.last_name
-                    }
-                }, status=status.HTTP_201_CREATED)
+            # Send verification email
+            send_verification_email(user, request)
             
             return Response({
-                'message': 'Registration successful! You can now login.',
+                'message': 'Registration successful! Please check your email to verify your account.',
                 'email': user.email,
-                'user': {
-                    'id': user.id,
-                    'email': user.email,
-                    'username': user.username,
-                    'role': user.role
-                }
+                'requires_verification': True
             }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
             print(f"❌ Error creating user: {str(e)}")
-            import traceback
-            traceback.print_exc()
             return Response({
                 'error': f'Database error: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+
 class VerifyEmailView(APIView):
-    permission_classes = []
+    permission_classes = [AllowAny]
     
     def get(self, request, uidb64, token):
+        from django.utils.http import urlsafe_base64_decode
+        from django.utils.encoding import force_str
+        from django.contrib.auth.tokens import default_token_generator
+        
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(pk=uid)
@@ -262,9 +205,17 @@ class VerifyEmailView(APIView):
             user = None
         
         if user and default_token_generator.check_token(user, token):
+            if user.is_email_verified:
+                return Response({
+                    'message': 'Email already verified. You can now login.'
+                }, status=status.HTTP_200_OK)
+            
             user.is_email_verified = True
             user.is_active = True
             user.save()
+            
+            # Send welcome email
+            send_welcome_email(user)
             
             return Response({
                 'message': 'Email verified successfully! You can now login.'
