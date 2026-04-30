@@ -1,27 +1,31 @@
+// FieldList.jsx - Clean version with only necessary buttons
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { 
-  Eye, 
   Edit, 
   Trash2, 
-  Search, 
+  Plus,
+  User,
+  AlertTriangle,
+  CheckCircle,
+  Eye,
+  Search,
   ChevronLeft, 
   ChevronRight,
   Filter,
   Download,
-  UserPlus,
   ArrowUpDown,
   X,
-  User
+  Sprout,
+  Map
 } from 'lucide-react'
+import { fieldService } from '../../services/api'
 import { useAuth } from '../../contexts/AuthContext'
-import { fieldService, exportService } from '../../services/api'
 import toast from 'react-hot-toast'
-import FieldQuickViewModal from './FieldQuickViewModal'
 
 const FieldList = ({ initialFields, onFieldUpdate }) => {
   const navigate = useNavigate()
-  const { isAdmin } = useAuth()
+  const { user, isAdmin } = useAuth()
   const [fields, setFields] = useState(initialFields || [])
   const [loading, setLoading] = useState(!initialFields)
   const [searchTerm, setSearchTerm] = useState('')
@@ -31,11 +35,8 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
   const [sortDirection, setSortDirection] = useState('desc')
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(25)
-  const [selectedFields, setSelectedFields] = useState([])
   const [showFilters, setShowFilters] = useState(false)
   const [exporting, setExporting] = useState(false)
-  const [selectedFieldId, setSelectedFieldId] = useState(null)
-  const [showQuickViewModal, setShowQuickViewModal] = useState(false)
 
   const itemsPerPageOptions = [25, 50, 100, 250, 500]
 
@@ -51,7 +52,10 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
   const fetchFields = async () => {
     try {
       setLoading(true)
-      const response = await fieldService.getAllFields()
+      const response = isAdmin 
+        ? await fieldService.getAllFields()
+        : await fieldService.getMyFields()
+      
       let fieldsData = []
       
       if (Array.isArray(response)) {
@@ -64,7 +68,6 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
         fieldsData = []
       }
       
-      // Process fields to ensure assigned_to_name is available
       const processedFields = fieldsData.map(field => ({
         ...field,
         assigned_to_name: field.assigned_to_details?.username || 
@@ -91,26 +94,29 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
     }
   }
 
-  const handleSelectAll = () => {
-    if (selectedFields.length === filteredFields.length) {
-      setSelectedFields([])
-    } else {
-      setSelectedFields(filteredFields.map(f => f.id))
-    }
-  }
-
-  const handleSelectField = (fieldId) => {
-    if (selectedFields.includes(fieldId)) {
-      setSelectedFields(selectedFields.filter(id => id !== fieldId))
-    } else {
-      setSelectedFields([...selectedFields, fieldId])
-    }
-  }
-
   const handleExportCSV = async () => {
     setExporting(true)
     try {
-      const blob = await exportService.exportFieldsCSV()
+      const headers = ['ID', 'Field Name', 'Crop Type', 'Stage', 'Status', 'Assigned To', 'Planting Date', 'Location', 'Last Updated']
+      const csvRows = [headers]
+      
+      filteredFields.forEach(field => {
+        const row = [
+          `FLD-${String(field.id).padStart(4, '0')}`,
+          `"${field.name || ''}"`,
+          `"${field.crop_type || ''}"`,
+          field.current_stage || '',
+          field.status || '',
+          `"${field.assigned_to_name || 'Unassigned'}"`,
+          field.planting_date ? new Date(field.planting_date).toLocaleDateString() : '',
+          `"${field.location || ''}"`,
+          field.updated_at ? new Date(field.updated_at).toLocaleDateString() : ''
+        ]
+        csvRows.push(row.join(','))
+      })
+      
+      const csvContent = csvRows.join('\n')
+      const blob = new Blob([csvContent], { type: 'text/csv' })
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -119,7 +125,7 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
       a.click()
       a.remove()
       window.URL.revokeObjectURL(url)
-      toast.success('Export started')
+      toast.success(`Exported ${filteredFields.length} fields successfully`)
     } catch (error) {
       console.error('Export failed:', error)
       toast.error('Failed to export fields')
@@ -151,7 +157,6 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
     return styles[stage?.toLowerCase()] || 'bg-gray-100 text-gray-700'
   }
 
-  // Get assigned agent display name
   const getAssignedAgentName = (field) => {
     if (field.assigned_to_details?.username) {
       return field.assigned_to_details.username
@@ -165,16 +170,9 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
     if (field.assigned_to && typeof field.assigned_to === 'object' && field.assigned_to.username) {
       return field.assigned_to.username
     }
-    if (field.assigned_to && typeof field.assigned_to === 'object' && field.assigned_to.email) {
-      return field.assigned_to.email.split('@')[0]
-    }
-    if (field.assigned_to && typeof field.assigned_to !== 'object') {
-      return `Agent #${field.assigned_to}`
-    }
     return null
   }
 
-  // Filtering
   const filteredFields = fields.filter(field => {
     const agentName = getAssignedAgentName(field) || ''
     const matchesSearch = searchTerm === '' || 
@@ -190,7 +188,6 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
     return matchesSearch && matchesStatus && matchesStage
   })
 
-  // Sorting
   const sortedFields = [...filteredFields].sort((a, b) => {
     let aVal = a[sortField]
     let bVal = b[sortField]
@@ -210,7 +207,6 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
     return 0
   })
 
-  // Pagination
   const totalPages = Math.ceil(sortedFields.length / itemsPerPage)
   const paginatedFields = sortedFields.slice(
     (currentPage - 1) * itemsPerPage,
@@ -241,45 +237,52 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* Header with Buttons - Removed redundant Update Field button */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">All Fields</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {isAdmin ? 'All Fields' : 'My Fields'}
+          </h1>
           <p className="text-gray-500 text-sm mt-1">
-            Manage and monitor all agricultural fields
+            {isAdmin 
+              ? 'Manage and monitor all agricultural fields'
+              : 'View and update fields assigned to you'}
             {filteredFields.length > 0 && ` • ${filteredFields.length} field${filteredFields.length !== 1 ? 's' : ''}`}
-            {selectedFields.length > 0 && ` • ${selectedFields.length} selected`}
           </p>
         </div>
         
         <div className="flex flex-wrap gap-2">
-          {isAdmin && (
-            <button
-              onClick={handleExportCSV}
-              disabled={exporting}
-              className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              {exporting ? 'Exporting...' : 'Export CSV'}
-            </button>
-          )}
-          <Link
-            to="/fields/create"
-            className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition flex items-center gap-2"
+          {/* Export CSV - Available to all */}
+          <button
+            onClick={handleExportCSV}
+            disabled={exporting || filteredFields.length === 0}
+            className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            + New Field
-          </Link>
+            <Download className="w-4 h-4" />
+            {exporting ? 'Exporting...' : 'Export CSV'}
+          </button>
+          
+          {/* New Field - ONLY for Admins */}
+          {isAdmin && (
+            <Link
+              to="/fields/create"
+              className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              New Field
+            </Link>
+          )}
         </div>
       </div>
 
-      {/* Search Bar */}
+      {/* Search and Filters Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search by field name, crop, location, ID, or assigned agent..."
+              placeholder="Search by field name, crop, location, or ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -312,7 +315,6 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
           )}
         </div>
 
-        {/* Expandable Filters */}
         {showFilters && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100">
             <div>
@@ -372,16 +374,6 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                {isAdmin && (
-                  <th className="px-4 py-3 text-left w-8">
-                    <input
-                      type="checkbox"
-                      checked={selectedFields.length === filteredFields.length && filteredFields.length > 0}
-                      onChange={handleSelectAll}
-                      className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                    />
-                  </th>
-                )}
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('id')}>
                   ID <SortIcon field="id" />
                 </th>
@@ -397,16 +389,18 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('status')}>
                   Status <SortIcon field="status" />
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Assigned To
-                </th>
+                {isAdmin && (
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Assigned To
+                  </th>
+                )}
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('planting_date')}>
                   Planted <SortIcon field="planting_date" />
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Location
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
                   Actions
                 </th>
               </tr>
@@ -414,7 +408,7 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
             <tbody className="divide-y divide-gray-100">
               {paginatedFields.length === 0 ? (
                 <tr>
-                  <td colSpan={isAdmin ? 10 : 9} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={isAdmin ? 9 : 8} className="px-4 py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center gap-2">
                       <Search className="w-8 h-8 text-gray-300" />
                       <p>No fields found</p>
@@ -424,102 +418,87 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
                         </button>
                       )}
                     </div>
-                  </td>
-                </tr>
+                    </td>
+                  </tr>
               ) : (
-                paginatedFields.map((field) => {
-                  const agentName = getAssignedAgentName(field)
-                  return (
-                    <tr key={field.id} className="hover:bg-gray-50 transition">
-                      {isAdmin && (
-                        <td className="px-4 py-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedFields.includes(field.id)}
-                            onChange={() => handleSelectField(field.id)}
-                            className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                          />
-                        </td>
-                      )}
+                paginatedFields.map((field) => (
+                  <tr key={field.id} className="hover:bg-gray-50 transition">
+                    <td className="px-4 py-3">
+                      <code className="text-xs font-mono text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                        {formatFieldId(field.id)}
+                      </code>
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      <Link to={`/fields/${field.id}`} className="hover:text-emerald-600">
+                        {field.name}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{field.crop_type || '-'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getStageBadge(field.current_stage)}`}>
+                        {field.current_stage || '-'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(field.status)}`}>
+                        {field.status}
+                      </span>
+                    </td>
+                    {isAdmin && (
                       <td className="px-4 py-3">
-                        <code className="text-xs font-mono text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                          {formatFieldId(field.id)}
-                        </code>
-                      </td>
-                      <td className="px-4 py-3 font-medium text-gray-900">
-                        <Link to={`/fields/${field.id}`} className="hover:text-emerald-600">
-                          {field.name}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{field.crop_type || '-'}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getStageBadge(field.current_stage)}`}>
-                          {field.current_stage || '-'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(field.status)}`}>
-                          {field.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        {agentName ? (
+                        {getAssignedAgentName(field) ? (
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
                               <User className="w-3 h-3 text-blue-600" />
                             </div>
-                            <span className="text-gray-700 text-sm">{agentName}</span>
+                            <span className="text-gray-700 text-sm">{getAssignedAgentName(field)}</span>
                           </div>
                         ) : (
                           <span className="text-gray-400 italic text-sm">Unassigned</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-500">
-                        {field.planting_date ? new Date(field.planting_date).toLocaleDateString() : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500">
-                        {field.location || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          {/* Quick View (Eye icon) - Opens modal */}
+                    )}
+                    <td className="px-4 py-3 text-gray-500">
+                      {field.planting_date ? new Date(field.planting_date).toLocaleDateString() : '-'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {field.location || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        {/* Eye Icon - View & Update Field (This handles all updates) */}
+                        <Link
+                          to={`/fields/${field.id}`}
+                          className="p-1.5 text-gray-400 hover:text-emerald-600 transition rounded-lg hover:bg-emerald-50"
+                          title="View & Update Field - Click to see full details and update stage, add observations"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                        
+                        {/* Delete - Only for Admins */}
+                        {isAdmin && (
                           <button
-                            onClick={() => {
-                              setSelectedFieldId(field.id)
-                              setShowQuickViewModal(true)
-                            }}
-                            className="p-1.5 text-gray-400 hover:text-emerald-600 transition rounded-lg hover:bg-emerald-50"
-                            title="Quick View"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          
-                      
-                          
-                          {isAdmin && (
-                            <button
-                              onClick={async () => {
-                                if (window.confirm(`Delete field "${field.name}"? This action cannot be undone.`)) {
-                                  try {
-                                    await fieldService.deleteField(field.id)
-                                    await fetchFields()
-                                    toast.success('Field deleted successfully')
-                                  } catch (error) {
-                                    toast.error('Failed to delete field')
-                                  }
+                            onClick={async () => {
+                              if (window.confirm(`Delete field "${field.name}"? This action cannot be undone.`)) {
+                                try {
+                                  await fieldService.deleteField(field.id)
+                                  await fetchFields()
+                                  toast.success('Field deleted successfully')
+                                } catch (error) {
+                                  toast.error('Failed to delete field')
                                 }
-                              }}
-                              className="p-1.5 text-gray-400 hover:text-red-600 transition rounded-lg hover:bg-red-50"
-                              title="Delete Field"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })
+                              }
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-red-600 transition rounded-lg hover:bg-red-50"
+                            title="Delete Field"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -577,17 +556,6 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
           </div>
         )}
       </div>
-
-      {/* Quick View Modal */}
-      <FieldQuickViewModal
-        isOpen={showQuickViewModal}
-        onClose={() => {
-          setShowQuickViewModal(false)
-          setSelectedFieldId(null)
-        }}
-        fieldId={selectedFieldId}
-        onFieldUpdated={fetchFields}
-      />
     </div>
   )
 }
