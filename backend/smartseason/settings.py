@@ -18,6 +18,10 @@ import dj_database_url
 
 load_dotenv()
 
+# Google OAuth
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -54,9 +58,9 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'allauth',
     'allauth.account',
-    'allauth.socialaccount',
     'accounts',
     'fields',
+    'allauth.socialaccount.providers.google',
 ]
 
 MIDDLEWARE = [
@@ -278,10 +282,11 @@ LOGGING = {
 
 # CORS settings - Allow frontend to communicate with backend
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # React default port
-    "http://127.0.0.1:3000",
-    "http://localhost:5173",  # Vite default port
-    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "https://shamba-records-smartseason-field-mo.vercel.app",
+    "https://shamba-records-smartseason-field.onrender.com",
 ]
 
 # For development - allow all (optional, not recommended for production)
@@ -289,6 +294,8 @@ CORS_ALLOW_ALL_ORIGINS = True  # Only use for development
 
 # Allow credentials (cookies, authorization headers)
 CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 
 # Allowed methods
 CORS_ALLOW_METHODS = [
@@ -312,3 +319,22 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+
+# Google OAuth settings
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'OAUTH_PKCE_ENABLED': True,
+    }
+}
+
+# Social account settings
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'  # Since you want quick signup
+SOCIALACCOUNT_EMAIL_REQUIRED = True
+SOCIALACCOUNT_AUTO_SIGNUP = True

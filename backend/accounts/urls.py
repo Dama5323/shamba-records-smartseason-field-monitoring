@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import (
     CreateAdminUserView,
+    GoogleLoginView,
     LoginView, 
     RegisterView, 
     VerifyEmailView, 
@@ -22,6 +23,7 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('verify-email/<uidb64>/<token>/', VerifyEmailView.as_view(), name='verify_email'),
     path('resend-verification/', ResendVerificationEmailView.as_view(), name='resend_verification'),
+    path('google-login/', GoogleLoginView.as_view(), name='google_login'),  # Custom Google login
     
     # Social Authentication
     path('social/google/', GoogleSocialAuth.as_view(), name='google_auth'),
