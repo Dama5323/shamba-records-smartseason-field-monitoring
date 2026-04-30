@@ -22,8 +22,6 @@ from .email_utils import send_verification_email, send_welcome_email
 from .models import User
 
 
-# accounts/views.py - Update GoogleLoginView
-
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
     
@@ -59,8 +57,10 @@ class GoogleLoginView(APIView):
             
             # Check if user exists
             user = User.objects.filter(email=email).first()
+            is_new_user = False
             
             if not user:
+                is_new_user = True
                 # Generate username from email
                 base_username = email.split('@')[0]
                 username = base_username
@@ -81,19 +81,25 @@ class GoogleLoginView(APIView):
                 alphabet = string.ascii_letters + string.digits + string.punctuation
                 password = ''.join(secrets.choice(alphabet) for i in range(20))
                 
-                # Create new user
+                # Create new user with agent role
                 user = User(
                     email=email,
                     username=username,
                     first_name=first_name,
                     last_name=last_name,
-                    role='agent',
+                    role='agent',  # IMPORTANT: Set role to 'agent'
                     is_active=True,
                     is_email_verified=True
                 )
                 user.set_password(password)
                 user.save()
-                print(f"✅ Created new Google user: {email} (username: {username})")
+                print(f"✅ Created new Google user: {email} (username: {username}, role: agent)")
+            else:
+                # Ensure existing user is active
+                if not user.is_active:
+                    user.is_active = True
+                    user.save()
+                    print(f"✅ Activated existing user: {email}")
             
             # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
@@ -109,7 +115,7 @@ class GoogleLoginView(APIView):
                     'first_name': user.first_name,
                     'last_name': user.last_name,
                 },
-                'is_new_user': not bool(User.objects.filter(email=email).first() is None)
+                'is_new_user': is_new_user
             })
             
         except Exception as e:
@@ -120,7 +126,6 @@ class GoogleLoginView(APIView):
                 {'error': f'Google authentication failed: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
