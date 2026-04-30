@@ -1,3 +1,4 @@
+// src/contexts/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect } from 'react'
 import { authService } from '../services/api'
 import toast from 'react-hot-toast'
@@ -12,6 +13,20 @@ export const useAuth = () => {
   return context
 }
 
+// Persistent debug logger that saves to sessionStorage
+const persistentLog = (message, data = null) => {
+  const logs = JSON.parse(sessionStorage.getItem('auth_debug_logs') || '[]')
+  logs.push({ 
+    timestamp: new Date().toISOString(), 
+    message, 
+    data: data ? (typeof data === 'string' ? data : JSON.stringify(data)) : null 
+  })
+  // Keep only last 20 logs
+  while (logs.length > 20) logs.shift()
+  sessionStorage.setItem('auth_debug_logs', JSON.stringify(logs))
+  console.log(message, data || '')
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -20,14 +35,21 @@ export const AuthProvider = ({ children }) => {
     const storedUser = localStorage.getItem('user')
     const token = localStorage.getItem('access_token')
     
+    persistentLog('🔵 AuthProvider init - checking localStorage')
+    persistentLog(`  storedUser: ${!!storedUser}`)
+    persistentLog(`  token exists: ${!!token}`)
+    
     if (storedUser && token) {
       try {
         const parsedUser = JSON.parse(storedUser)
+        persistentLog(`✅ User loaded from localStorage: ${parsedUser.email}`)
         setUser(parsedUser)
       } catch (error) {
-        console.error('Error parsing user data:', error)
+        persistentLog(`❌ Error parsing user data: ${error.message}`)
         localStorage.removeItem('user')
       }
+    } else {
+      persistentLog('⚠️ No stored user or token found')
     }
     setLoading(false)
   }, [])
@@ -59,26 +81,58 @@ export const AuthProvider = ({ children }) => {
     }
   }
   
-  // Google Sign Up
+  // Google Sign Up with persistent logging
   const signUpWithGoogle = async (accessToken) => {
+    persistentLog('🔵 Starting Google signup')
+    persistentLog(`🔵 Token preview: ${accessToken?.substring(0, 30)}...`)
+    
     try {
+      persistentLog('🔵 Calling authService.googleLogin...')
       const data = await authService.googleLogin(accessToken)
-      if (data.access) {
-        setUser(data.user)
-        localStorage.setItem('user', JSON.stringify(data.user))
+      persistentLog('🔵 Response received', data)
+      
+      // Extract tokens from response - handles both 'access' and 'access_token' formats
+      const access_token = data.access || data.access_token
+      const refresh_token = data.refresh || data.refresh_token
+      const userData = data.user || data.user_data
+      
+      persistentLog(`🔵 Extracted - access_token: ${!!access_token}, user: ${!!userData}`)
+      
+      if (access_token && userData) {
+        persistentLog('🔵 Storing in localStorage...')
+        localStorage.setItem('access_token', access_token)
+        if (refresh_token) localStorage.setItem('refresh_token', refresh_token)
+        localStorage.setItem('user', JSON.stringify(userData))
+        
+        persistentLog('✅ Tokens stored successfully')
+        persistentLog(`🔵 Verification - access_token: ${!!localStorage.getItem('access_token')}, user: ${!!localStorage.getItem('user')}`)
+        
+        setUser(userData)
+        
         toast.success(data.is_new_user ? 'Account created with Google!' : 'Welcome back!')
         return { success: true, data }
+      } else {
+        persistentLog('🔴 Invalid response format', { 
+          has_access: !!access_token, 
+          has_user: !!userData,
+          response_keys: Object.keys(data)
+        })
+        return { success: false, error: 'Invalid response from server' }
       }
-      return { success: false, error: 'No access token received' }
     } catch (error) {
-      console.error('Google signup error:', error)
-      const message = error.response?.data?.error || 'Google authentication failed'
+      persistentLog('🔴 Error caught', { 
+        message: error.message, 
+        response: error.response?.data,
+        status: error.response?.status
+      })
+      const message = error.response?.data?.error || error.response?.data?.detail || 'Google authentication failed'
       toast.error(message)
       return { success: false, error: message }
     }
   }
   
   const logout = () => {
+    persistentLog('🔵 Logging out...')
     authService.logout()
     setUser(null)
     toast.success('Logged out successfully')
@@ -104,7 +158,7 @@ export const AuthProvider = ({ children }) => {
     setUser,
     login,
     register,
-    signUpWithGoogle,  // Add Google sign up here
+    signUpWithGoogle,
     logout,
     updateProfile,
     isAuthenticated: !!user,

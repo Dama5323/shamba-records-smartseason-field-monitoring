@@ -1,8 +1,10 @@
+// src/services/api.js
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
+// Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
@@ -11,25 +13,45 @@ const api = axios.create({
   }
 })
 
-// Request interceptor to add auth token
+// 🔥 ATTACH TOKEN AUTOMATICALLY TO EVERY REQUEST
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token')
+    console.log('🔵 API Interceptor - Token exists:', !!token)
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
+      console.log('🔵 API Interceptor - Authorization header set')
+    } else {
+      console.log('🔵 API Interceptor - No token found')
     }
+    
+    // Log the request for debugging
+    console.log(`🔵 API Request: ${config.method?.toUpperCase()} ${config.url}`)
+    
     return config
   },
   (error) => {
+    console.error('🔴 API Request Error:', error)
     return Promise.reject(error)
   }
 )
 
 // Response interceptor
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`🟢 API Response: ${response.config.url} - Status: ${response.status}`)
+    return response
+  },
   async (error) => {
-    if (error.response?.status === 401) {
+    // Don't clear storage for google-login 401 errors
+    const isGoogleLogin = error.config?.url?.includes('google-login')
+    const isLoginRequest = error.config?.url?.includes('login')
+    
+    console.error(`🔴 API Error: ${error.config?.url} - Status: ${error.response?.status}`)
+    
+    if (error.response?.status === 401 && !isGoogleLogin && !isLoginRequest) {
+      console.log('🔴 401 Unauthorized - Clearing localStorage and redirecting to login')
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
       localStorage.removeItem('user')
@@ -52,29 +74,45 @@ api.interceptors.response.use(
 // Auth services
 export const authService = {
   login: async (email, password) => {
+    console.log('🔵 AuthService: Login attempt for:', email)
     const response = await api.post('/auth/login/', { email, password })
+    console.log('🟢 AuthService: Login response status:', response.status)
+    
     if (response.data.access) {
+      console.log('🟢 AuthService: Storing tokens in localStorage')
       localStorage.setItem('access_token', response.data.access)
       localStorage.setItem('refresh_token', response.data.refresh)
       localStorage.setItem('user', JSON.stringify(response.data.user))
+      
+      // Verify storage
+      console.log('🟢 AuthService: Token stored:', !!localStorage.getItem('access_token'))
+      console.log('🟢 AuthService: User stored:', !!localStorage.getItem('user'))
     }
     return response.data
   },
   
   googleLogin: async (accessToken) => {
+    console.log('🔵 API: Calling google-login endpoint')
+    console.log('🔵 API: Token preview:', accessToken?.substring(0, 30) + '...')
+    
     const response = await api.post('/auth/google-login/', {
       access_token: accessToken
     })
-    if (response.data.access) {
-      localStorage.setItem('access_token', response.data.access)
-      localStorage.setItem('refresh_token', response.data.refresh)
-      localStorage.setItem('user', JSON.stringify(response.data.user))
-    }
+    
+    console.log('🔵 API: Response status:', response.status)
+    console.log('🔵 API: Response has access:', !!response.data.access)
+    console.log('🔵 API: Response has user:', !!response.data.user)
+    
     return response.data
   },
   
+  register: async (userData) => {
+    const response = await api.post('/auth/register/', userData)
+    return response.data
+  },
   
   logout: () => {
+    console.log('🔵 AuthService: Logging out, clearing localStorage')
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('user')
@@ -109,18 +147,25 @@ export const authService = {
 // Field services 
 export const fieldService = {
   getAllFields: async () => {
+    console.log('🔵 FieldService: Getting all fields')
     const response = await api.get('/fields/')
+    console.log('🟢 FieldService: Got', response.data?.length || 0, 'fields')
     return response.data
   },
   
   getMyFields: async () => {
     try {
-      console.log('Fetching my assigned fields...')
+      console.log('🔵 FieldService: Fetching my assigned fields...')
+      const token = localStorage.getItem('access_token')
+      console.log('🔵 FieldService: Token exists before request:', !!token)
+      
       const response = await api.get('/my-fields/')
-      console.log('My fields response:', response.data)
+      console.log('🟢 FieldService: My fields response:', response.data)
       return response.data
     } catch (error) {
-      console.error('Error in getMyFields:', error)
+      console.error('🔴 FieldService: Error in getMyFields:', error)
+      console.error('🔴 FieldService: Error status:', error.response?.status)
+      console.error('🔴 FieldService: Error data:', error.response?.data)
       throw error
     }
   },
@@ -301,7 +346,6 @@ export const observationAPI = {
     api.get(`/observations/${id}/`).then(res => res.data),
   
   createObservation: (data) => {
-    // If data is FormData, send it directly, otherwise as JSON
     if (data instanceof FormData) {
       return api.post('/observations/', data, {
         headers: { 'Content-Type': 'multipart/form-data' }
