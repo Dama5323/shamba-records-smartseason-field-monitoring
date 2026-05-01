@@ -8,13 +8,16 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email', 'username', 'password', 'role', 'first_name', 'last_name', 
-                  'phone_number', 'location', 'farm_name']
+                  'phone_number', 'location', 'farm_name', 'is_active', 'is_email_verified', 'date_joined']
         extra_kwargs = {
             'email': {'required': True},
             'username': {'required': True},
             'phone_number': {'required': False, 'allow_null': True},
             'location': {'required': False, 'allow_null': True},
-            'farm_name': {'required': False, 'allow_null': True}
+            'farm_name': {'required': False, 'allow_null': True},
+            'is_active': {'read_only': True},  # Can't be set directly
+            'is_email_verified': {'read_only': True},  # Can't be set directly
+            'date_joined': {'read_only': True}
         }
 
     def validate_email(self, value):
@@ -43,6 +46,7 @@ class UserSerializer(serializers.ModelSerializer):
         password = validated_data.pop('password')
         user = User(**validated_data)
         user.set_password(password)
+        user.is_active = False  # New users start as inactive
+        user.is_email_verified = False
         user.save()
         return user
-    

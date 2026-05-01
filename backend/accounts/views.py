@@ -551,9 +551,10 @@ class UserDetailView(APIView):
     
     @extend_schema(
         summary="Delete user (Admin only)",
-        description="Soft delete or permanently delete a user",
+        description="Permanently delete a user",
         tags=["Admin"]
     )
+
     def delete(self, request, user_id):
         if request.user.role != 'admin':
             return Response(
@@ -570,17 +571,10 @@ class UserDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        permanent = request.query_params.get('permanent', 'false').lower() == 'true'
+        # Always hard delete
+        user.delete()
         
-        if permanent:
-            user.delete()
-            message = 'User permanently deleted'
-        else:
-            user.is_active = False
-            user.save()
-            message = 'User deactivated'
-        
-        return Response({'message': message})
+        return Response({'message': 'User permanently deleted'}, status=status.HTTP_200_OK)
 
 
 class ToggleUserStatusView(APIView):
@@ -608,21 +602,24 @@ class ToggleUserStatusView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        # Toggle the status
         user.is_active = not user.is_active
+        
+        # If activating, also mark email as verified
+        if user.is_active:
+            user.is_email_verified = True
+        
         user.save()
         
         status_text = 'activated' if user.is_active else 'deactivated'
+        
+        # Return the updated user data including new status
+        serializer = UserSerializer(user)
+        
         return Response({
             'message': f'User {status_text} successfully',
-            'is_active': user.is_active,
-            'user': {
-                'id': user.id,
-                'email': user.email,
-                'username': user.username,
-                'role': user.role
-            }
+            'user': serializer.data
         })
-
 
 class CreateAdminUserView(APIView):
     """Only existing admins can create new admin users"""
