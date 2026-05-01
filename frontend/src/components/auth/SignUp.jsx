@@ -22,12 +22,6 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [activeMethod, setActiveMethod] = useState('email');
   const [googleLoaded, setGoogleLoaded] = useState(false);
-  const [debugInfo, setDebugInfo] = useState([]);
-  
-  const addDebug = (message, type = 'info') => {
-    console.log(`[${type.toUpperCase()}] ${message}`);
-    setDebugInfo(prev => [...prev, { message, type, timestamp: new Date().toLocaleTimeString() }]);
-  };
   
   const [formData, setFormData] = useState({
     email: '',
@@ -39,12 +33,10 @@ const SignUp = () => {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
+  // Load Google API
   useEffect(() => {
-    addDebug('Checking if Google API is loaded...', 'info');
-    
     const checkGoogle = setInterval(() => {
       if (typeof google !== 'undefined' && google.accounts) {
-        addDebug('✅ Google API loaded successfully!', 'success');
         setGoogleLoaded(true);
         clearInterval(checkGoogle);
       }
@@ -52,19 +44,13 @@ const SignUp = () => {
     
     const timeout = setTimeout(() => {
       clearInterval(checkGoogle);
-      if (!googleLoaded) {
-        addDebug('❌ Google API failed to load after 10 seconds', 'error');
-      }
     }, 10000);
     
     if (!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) {
-      addDebug('Loading Google script dynamically...', 'info');
       const script = document.createElement('script');
       script.src = 'https://accounts.google.com/gsi/client';
       script.async = true;
       script.defer = true;
-      script.onload = () => addDebug('✅ Google script loaded', 'success');
-      script.onerror = () => addDebug('❌ Failed to load Google script', 'error');
       document.body.appendChild(script);
     }
     
@@ -74,77 +60,51 @@ const SignUp = () => {
     };
   }, []);
 
-  // Updated Google Sign In - using React Router navigation only
+  // Google Sign In
   const handleGoogleSignIn = () => {
-    addDebug('🔵 Google Sign In button clicked', 'info')
-    
     if (!googleLoaded) {
-      addDebug('❌ Google API not loaded yet', 'error')
-      toast.error('Google Sign In is still loading. Please wait a moment.')
-      return
+      toast.error('Google Sign In is loading. Please wait a moment.');
+      return;
     }
     
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
-    addDebug(`Using Client ID: ${clientId?.substring(0, 20)}...`, 'info')
-    
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) {
-      addDebug('❌ VITE_GOOGLE_CLIENT_ID is not set in environment variables!', 'error')
-      toast.error('Google Client ID not configured. Please contact support.')
-      return
+      toast.error('Google Sign In is not configured. Please contact support.');
+      return;
     }
     
-    setLoading(true)
-    addDebug('🟢 Creating Google OAuth token client...', 'info')
+    setLoading(true);
     
     try {
       const client = google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: 'email profile',
         callback: async (tokenResponse) => {
-          addDebug(`🟢 Google callback received!`, 'success')
-          
           try {
-            addDebug('🟢 Calling signUpWithGoogle function...', 'info')
-            const result = await signUpWithGoogle(tokenResponse.access_token)
-            addDebug(`🟢 signUpWithGoogle result: success=${result.success}`, result.success ? 'success' : 'error')
-            
+            const result = await signUpWithGoogle(tokenResponse.access_token);
             if (result.success) {
-              addDebug('🟢 Checking localStorage after signup...', 'info')
-              const token = localStorage.getItem('access_token')
-              const user = localStorage.getItem('user')
-              addDebug(`Access token stored: ${!!token}`, token ? 'success' : 'error')
-              addDebug(`User data stored: ${!!user}`, user ? 'success' : 'error')
-              
-              if (token && user) {
-                addDebug('✅ Both token and user stored, navigating to dashboard via React Router', 'success')
-                navigate('/dashboard')
-              } else {
-                addDebug('❌ Storage verification failed - missing token or user', 'error')
-                setLoading(false)
-              }
+              navigate('/dashboard');
             } else {
-              addDebug(`❌ signUpWithGoogle failed: ${result.error}`, 'error')
-              setLoading(false)
+              toast.error(result.error || 'Google signup failed');
+              setLoading(false);
             }
           } catch (error) {
-            addDebug(`❌ Error in Google callback: ${error.message}`, 'error')
-            console.error('Full error:', error)
-            setLoading(false)
+            console.error('Google signup error:', error);
+            toast.error('Google signup failed. Please try again.');
+            setLoading(false);
           }
         },
         onError: (error) => {
-          addDebug(`❌ Google OAuth error: ${error.type || error.message || 'Unknown error'}`, 'error')
-          toast.error('Google signup cancelled or failed')
-          setLoading(false)
+          toast.error('Google signup cancelled or failed');
+          setLoading(false);
         }
-      })
+      });
       
-      addDebug('🟢 Requesting access token from Google...', 'info')
-      client.requestAccessToken()
+      client.requestAccessToken();
     } catch (error) {
-      addDebug(`❌ Error initializing Google OAuth: ${error.message}`, 'error')
-      toast.error('Failed to initialize Google Sign In')
-      setLoading(false)
+      console.error('Google OAuth error:', error);
+      toast.error('Failed to initialize Google Sign In');
+      setLoading(false);
     }
   }
 
@@ -195,12 +155,10 @@ const SignUp = () => {
 
   const handleEmailSignUp = async (e) => {
     e.preventDefault();
-    addDebug('🔵 Email signup submitted', 'info');
     if (!validateForm()) return;
     
     setLoading(true);
     try {
-      addDebug(`Registering user: ${formData.email}`, 'info');
       const result = await register({
         email: formData.email,
         username: formData.username,
@@ -218,11 +176,10 @@ const SignUp = () => {
           navigate('/login');
         }
       } else {
-        addDebug(`❌ Email registration failed: ${result.error}`, 'error');
         toast.error(result.error || 'Registration failed');
       }
     } catch (error) {
-      addDebug(`❌ Email registration error: ${error.message}`, 'error');
+      console.error('Registration error:', error);
       toast.error('Registration failed. Please try again.');
     } finally {
       setLoading(false);
@@ -415,11 +372,6 @@ const SignUp = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900">Sign up with Google</h3>
               <p className="text-sm text-gray-600 mt-1">One-click sign up. No password needed.</p>
-              <div className="mt-2">
-                <span className={`text-xs ${googleLoaded ? 'text-green-600' : 'text-amber-600'}`}>
-                  {googleLoaded ? '✅ Google API ready' : '⏳ Loading Google API...'}
-                </span>
-              </div>
             </div>
 
             <button
@@ -431,22 +383,10 @@ const SignUp = () => {
               {loading ? 'Signing up...' : !googleLoaded ? 'Loading...' : 'Continue with Google'}
             </button>
 
-            <div className="mt-6 p-3 bg-gray-900 rounded-lg">
-              <p className="text-xs text-gray-400 mb-2 font-mono">🔍 Debug Logs:</p>
-              <div className="space-y-1 max-h-32 overflow-y-auto">
-                {debugInfo.slice(-5).map((log, idx) => (
-                  <p key={idx} className={`text-xs font-mono ${
-                    log.type === 'error' ? 'text-red-400' : 
-                    log.type === 'success' ? 'text-green-400' : 'text-gray-400'
-                  }`}>
-                    [{log.timestamp}] {log.message}
-                  </p>
-                ))}
-              </div>
-            </div>
-
             <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-              <p className="text-xs text-blue-800 text-center">🔒 One-click sign up. We'll only ask for permissions we need.</p>
+              <p className="text-xs text-blue-800 text-center">
+                🔒 One-click sign up. We'll only ask for permissions we need.
+              </p>
             </div>
           </div>
         )}
