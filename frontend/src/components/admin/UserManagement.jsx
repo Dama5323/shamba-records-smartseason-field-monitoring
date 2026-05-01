@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Users, UserCheck, UserX, Shield, Trash2, ToggleLeft, ToggleRight, Plus, Eye, X, UserPlus } from 'lucide-react'
+import { Users, UserCheck, UserX, Shield, Trash2, ToggleLeft, ToggleRight, Plus, Eye, X, UserPlus, RefreshCw } from 'lucide-react'
 import { adminService, authService } from '../../services/api'
 import toast from 'react-hot-toast'
 import FieldCard from '../fields/FieldCard'
@@ -12,6 +12,7 @@ const UserManagement = () => {
   const [showFieldsModal, setShowFieldsModal] = useState(false)
   const [selectedAgentFields, setSelectedAgentFields] = useState([])
   const [selectedAgentName, setSelectedAgentName] = useState('')
+  const [refreshing, setRefreshing] = useState(false)
   const [newAdmin, setNewAdmin] = useState({
     email: '',
     username: '',
@@ -36,22 +37,35 @@ const UserManagement = () => {
     try {
       setLoading(true)
       const data = await adminService.getUsers()
+      console.log('Fetched users:', data) // Debug log
+      
       // Handle different response formats
+      let usersList = []
       if (Array.isArray(data)) {
-        setUsers(data)
+        usersList = data
       } else if (data && data.results && Array.isArray(data.results)) {
-        setUsers(data.results)
+        usersList = data.results
       } else if (data && data.users && Array.isArray(data.users)) {
-        setUsers(data.users)
+        usersList = data.users
       } else {
-        setUsers([])
+        usersList = []
       }
+      
+      // Filter out inactive/deleted users if needed, or show all
+      setUsers(usersList)
     } catch (error) {
       console.error('Error fetching users:', error)
       toast.error('Failed to load users')
     } finally {
       setLoading(false)
     }
+  }
+  
+  const refreshUsers = async () => {
+    setRefreshing(true)
+    await fetchUsers()
+    setRefreshing(false)
+    toast.success('Users refreshed')
   }
   
   const handleToggleStatus = async (userId) => {
@@ -65,21 +79,23 @@ const UserManagement = () => {
     }
   }
   
-  const handleDeleteUser = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      // Optimistic update - remove from UI immediately
-      const previousUsers = [...users]
-      setUsers(prevUsers => prevUsers.filter(user => user.id !== userId))
-      
+  const handleDeleteUser = async (userId, userName) => {
+    // Confirm with user name for clarity
+    if (window.confirm(`Are you sure you want to permanently delete user "${userName}"? This action cannot be undone.`)) {
       try {
         await adminService.deleteUser(userId)
-        toast.success('User deleted successfully')
-        await fetchUsers() // Final refresh to ensure consistency
+        toast.success(`User "${userName}" deleted successfully`)
+        // Force refresh the user list
+        await fetchUsers()
       } catch (error) {
-        // Restore on failure
-        setUsers(previousUsers)
         console.error('Error deleting user:', error)
-        toast.error('Failed to delete user')
+        // Check if the backend actually deleted but returned error
+        if (error.response?.status === 204 || error.response?.status === 200) {
+          toast.success(`User "${userName}" deleted successfully`)
+          await fetchUsers()
+        } else {
+          toast.error(error.response?.data?.message || 'Failed to delete user')
+        }
       }
     }
   }
@@ -193,6 +209,15 @@ const UserManagement = () => {
         
         <div className="flex gap-3">
           <button 
+            onClick={refreshUsers} 
+            disabled={refreshing}
+            className="btn-secondary flex items-center gap-2"
+            title="Refresh users"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <button 
             onClick={() => setShowAgentModal(true)} 
             className="btn-secondary flex items-center gap-2"
           >
@@ -242,8 +267,8 @@ const UserManagement = () => {
               <tr>
                 <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
                   No users found
-                </td>
-              </tr>
+                 </td>
+               </tr>
             ) : (
               users.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50">
@@ -261,22 +286,22 @@ const UserManagement = () => {
                         <div className="text-xs text-gray-500">@{user.username}</div>
                       </div>
                     </div>
-                  </td>
+                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {user.email}
-                  </td>
+                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
                       {user.role === 'admin' || user.role === 'ADMIN' ? 'Admin' : 'Field Agent'}
                     </span>
-                  </td>
+                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}>
                       {user.is_active ? 'Active' : 'Inactive'}
                     </span>
-                  </td>
+                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {user.role === 'agent' && (
                       <button
@@ -290,10 +315,10 @@ const UserManagement = () => {
                     {user.role !== 'agent' && (
                       <span className="text-gray-400 text-sm">—</span>
                     )}
-                  </td>
+                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(user.date_joined).toLocaleDateString()}
-                  </td>
+                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end space-x-2">
                       <button
@@ -308,14 +333,14 @@ const UserManagement = () => {
                         )}
                       </button>
                       <button
-                        onClick={() => handleDeleteUser(user.id)}
+                        onClick={() => handleDeleteUser(user.id, user.username)}
                         className="text-red-600 hover:text-red-900"
-                        title="Delete"
+                        title="Delete User"
                       >
                         <Trash2 className="h-5 w-5" />
                       </button>
                     </div>
-                  </td>
+                   </td>
                 </tr>
               ))
             )}
