@@ -1,149 +1,133 @@
-import React, { useState } from 'react'
+// src/components/profile/Profile.jsx
+import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { User, Mail, Phone, MapPin, Save, Sprout } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { Mail, Phone, MapPin, Sprout, User, Edit, Calendar, Shield } from 'lucide-react'
 
 const Profile = () => {
-  const { user, updateProfile } = useAuth()
-  const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    first_name: user?.first_name || '',
-    last_name: user?.last_name || '',
-    phone_number: user?.phone_number || '',
-    location: user?.location || '',
-    farm_name: user?.farm_name || ''
-  })
-  
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
-  }
-  
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    const success = await updateProfile(formData)
-    setLoading(false)
-  }
-  
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const getInitials = () => {
+    const first = user?.first_name?.charAt(0) || '';
+    const last = user?.last_name?.charAt(0) || '';
+    if (first || last) return `${first}${last}`.toUpperCase();
+    return user?.username?.charAt(0).toUpperCase() || 'U';
+  };
+
+  const getFullName = () => {
+    if (user?.first_name || user?.last_name) {
+      return `${user?.first_name || ''} ${user?.last_name || ''}`.trim();
+    }
+    return user?.username || 'User';
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>
-        <p className="text-gray-600 mt-1">Manage your account information</p>
+        <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
+        <p className="text-gray-600 mt-1">View your personal information</p>
       </div>
       
       <div className="card">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex items-center space-x-4 pb-4 border-b border-gray-200">
-            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white font-semibold text-2xl">
-              {(formData.first_name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
+        {/* Profile Header */}
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+          <div className="flex items-center space-x-4">
+            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-semibold text-3xl">
+              {getInitials()}
             </div>
             <div>
-              <p className="font-medium text-gray-900">{user?.email}</p>
-              <p className="text-sm text-gray-500 capitalize">Role: {user?.role}</p>
+              <h2 className="text-xl font-bold text-gray-900">{getFullName()}</h2>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  user?.role === 'admin' 
+                    ? 'bg-purple-100 text-purple-700' 
+                    : 'bg-blue-100 text-blue-700'
+                }`}>
+                  {user?.role === 'admin' ? 'Administrator' : 'Field Agent'}
+                </span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  user?.is_active 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-red-100 text-red-700'
+                }`}>
+                  {user?.is_active ? 'Active' : 'Inactive'}
+                </span>
+              </div>
             </div>
           </div>
-          
-          <div className="grid grid-cols-2 gap-4">
+          <button
+            onClick={() => navigate('/profile/edit')}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
+          >
+            <Edit className="w-4 h-4" />
+            <span>Edit Profile</span>
+          </button>
+        </div>
+        
+        {/* Profile Details */}
+        <div className="space-y-4 pt-4">
+          <div className="flex items-start gap-3">
+            <Mail className="w-5 h-5 text-gray-400 mt-0.5" />
             <div>
-              <label className="label">First Name</label>
-              <input
-                type="text"
-                name="first_name"
-                value={formData.first_name}
-                onChange={handleChange}
-                className="input"
-                placeholder="Enter first name"
-              />
+              <p className="text-sm text-gray-500">Email Address</p>
+              <p className="text-gray-900">{user?.email}</p>
+              {user?.is_email_verified && (
+                <span className="text-xs text-green-600">✓ Verified</span>
+              )}
             </div>
+          </div>
+          
+          {user?.phone_number && (
+            <div className="flex items-start gap-3">
+              <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
+              <div>
+                <p className="text-sm text-gray-500">Phone Number</p>
+                <p className="text-gray-900">{user.phone_number}</p>
+              </div>
+            </div>
+          )}
+          
+          {user?.location && (
+            <div className="flex items-start gap-3">
+              <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+              <div>
+                <p className="text-sm text-gray-500">Location</p>
+                <p className="text-gray-900">{user.location}</p>
+              </div>
+            </div>
+          )}
+          
+          {user?.farm_name && (
+            <div className="flex items-start gap-3">
+              <Sprout className="w-5 h-5 text-gray-400 mt-0.5" />
+              <div>
+                <p className="text-sm text-gray-500">Farm/Business Name</p>
+                <p className="text-gray-900">{user.farm_name}</p>
+              </div>
+            </div>
+          )}
+          
+          <div className="flex items-start gap-3">
+            <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
             <div>
-              <label className="label">Last Name</label>
-              <input
-                type="text"
-                name="last_name"
-                value={formData.last_name}
-                onChange={handleChange}
-                className="input"
-                placeholder="Enter last name"
-              />
+              <p className="text-sm text-gray-500">Member Since</p>
+              <p className="text-gray-900">{formatDate(user?.date_joined)}</p>
             </div>
           </div>
-          
-          <div>
-            <label className="label">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="email"
-                value={user?.email}
-                disabled
-                className="input pl-10 bg-gray-50"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <label className="label">Phone Number</label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="tel"
-                name="phone_number"
-                value={formData.phone_number}
-                onChange={handleChange}
-                className="input pl-10"
-                placeholder="+1234567890"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <label className="label">Location</label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                className="input pl-10"
-                placeholder="City, Region"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <label className="label">Farm Name</label>
-            <div className="relative">
-              <Sprout className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                name="farm_name"
-                value={formData.farm_name}
-                onChange={handleChange}
-                className="input pl-10"
-                placeholder="Your farm/business name"
-              />
-            </div>
-          </div>
-          
-          <div className="pt-4">
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary flex items-center space-x-2"
-            >
-              <Save className="h-4 w-4" />
-              <span>{loading ? 'Saving...' : 'Save Changes'}</span>
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Profile
+export default Profile;

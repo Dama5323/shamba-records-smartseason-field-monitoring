@@ -21,6 +21,7 @@ import DashboardLayout from './components/layout/DashboardLayout'
 import ObservationsPage from './components/observations/ObservationsPage'
 import CreateObservation from './components/observations/CreateObservation'
 import VerifyEmail from './components/auth/VerifyEmail';
+import ProfileEdit from './components/profile/ProfileEdit';
 
 // Dashboard wrapper component
 const DashboardWrapper = () => {
@@ -200,6 +201,14 @@ const AppContent = () => {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/profile/edit"
+          element={
+            <ProtectedRoute>
+              <ProfileEdit />
             </ProtectedRoute>
           } 
         />
