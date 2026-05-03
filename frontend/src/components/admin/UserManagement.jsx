@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Users, UserCheck, UserX, Shield, Trash2, ToggleLeft, ToggleRight, Plus, Eye, X, UserPlus, RefreshCw } from 'lucide-react'
+import { Users, UserCheck, UserX, Shield, Trash2, ToggleLeft, ToggleRight, Plus, Eye, X, UserPlus, RefreshCw, AlertTriangle } from 'lucide-react'
 import { adminService, authService } from '../../services/api'
 import toast from 'react-hot-toast'
 import FieldCard from '../fields/FieldCard'
@@ -10,9 +10,12 @@ const UserManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showAgentModal, setShowAgentModal] = useState(false)
   const [showFieldsModal, setShowFieldsModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [selectedAgentFields, setSelectedAgentFields] = useState([])
   const [selectedAgentName, setSelectedAgentName] = useState('')
+  const [userToDelete, setUserToDelete] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [newAdmin, setNewAdmin] = useState({
     email: '',
     username: '',
@@ -37,9 +40,8 @@ const UserManagement = () => {
     try {
       setLoading(true)
       const data = await adminService.getUsers()
-      console.log('Fetched users:', data) // Debug log
+      console.log('Fetched users:', data)
       
-      // Handle different response formats
       let usersList = []
       if (Array.isArray(data)) {
         usersList = data
@@ -51,7 +53,6 @@ const UserManagement = () => {
         usersList = []
       }
       
-      // Filter out inactive/deleted users if needed, or show all
       setUsers(usersList)
     } catch (error) {
       console.error('Error fetching users:', error)
@@ -72,31 +73,42 @@ const UserManagement = () => {
     try {
       await adminService.toggleUserStatus(userId)
       toast.success('User status updated')
-      await fetchUsers() // Refresh immediately
+      await fetchUsers()
     } catch (error) {
       console.error('Error toggling user status:', error)
       toast.error('Failed to update user status')
     }
   }
   
-  const handleDeleteUser = async (userId, userName) => {
-    // Confirm with user name for clarity
-    if (window.confirm(`Are you sure you want to permanently delete user "${userName}"? This action cannot be undone.`)) {
-      try {
-        await adminService.deleteUser(userId)
-        toast.success(`User "${userName}" deleted successfully`)
-        // Force refresh the user list
+  // Open delete confirmation modal
+  const openDeleteModal = (user) => {
+    setUserToDelete(user)
+    setShowDeleteModal(true)
+  }
+  
+  // Confirm delete
+  const confirmDelete = async () => {
+    if (!userToDelete) return
+    
+    setDeleting(true)
+    try {
+      await adminService.deleteUser(userToDelete.id)
+      toast.success(`User "${userToDelete.username}" deleted successfully`)
+      setShowDeleteModal(false)
+      setUserToDelete(null)
+      await fetchUsers()
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      if (error.response?.status === 204 || error.response?.status === 200) {
+        toast.success(`User "${userToDelete.username}" deleted successfully`)
+        setShowDeleteModal(false)
+        setUserToDelete(null)
         await fetchUsers()
-      } catch (error) {
-        console.error('Error deleting user:', error)
-        // Check if the backend actually deleted but returned error
-        if (error.response?.status === 204 || error.response?.status === 200) {
-          toast.success(`User "${userName}" deleted successfully`)
-          await fetchUsers()
-        } else {
-          toast.error(error.response?.data?.message || 'Failed to delete user')
-        }
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to delete user')
       }
+    } finally {
+      setDeleting(false)
     }
   }
   
@@ -333,7 +345,7 @@ const UserManagement = () => {
                         )}
                       </button>
                       <button
-                        onClick={() => handleDeleteUser(user.id, user.username)}
+                        onClick={() => openDeleteModal(user)}
                         className="text-red-600 hover:text-red-900"
                         title="Delete User"
                       >
@@ -341,12 +353,65 @@ const UserManagement = () => {
                       </button>
                     </div>
                    </td>
-                </tr>
+                 </tr>
               ))
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && userToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-800">Delete User</h2>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setUserToDelete(null)
+                }} 
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <p className="text-gray-600">
+                Are you sure you want to permanently delete user <span className="font-semibold text-gray-900">"{userToDelete.username}"</span>?
+              </p>
+              <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
+                ⚠️ This action cannot be undone. All data associated with this user will be permanently removed.
+              </p>
+              
+              <div className="flex gap-3 pt-4">
+                <button 
+                  onClick={confirmDelete} 
+                  disabled={deleting}
+                  className="flex-1 bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 transition disabled:opacity-50"
+                >
+                  {deleting ? 'Deleting...' : 'Yes, Delete User'}
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowDeleteModal(false)
+                    setUserToDelete(null)
+                  }} 
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-300 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Admin Modal */}
       {showCreateModal && (

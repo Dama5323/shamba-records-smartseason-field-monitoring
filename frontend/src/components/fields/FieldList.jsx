@@ -1,4 +1,4 @@
-// FieldList.jsx - Clean version with only necessary buttons
+// FieldList.jsx - With custom delete confirmation modal
 import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { 
@@ -37,6 +37,11 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
   const [itemsPerPage, setItemsPerPage] = useState(25)
   const [showFilters, setShowFilters] = useState(false)
   const [exporting, setExporting] = useState(false)
+  
+  // Delete modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [fieldToDelete, setFieldToDelete] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   const itemsPerPageOptions = [25, 50, 100, 250, 500]
 
@@ -131,6 +136,30 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
       toast.error('Failed to export fields')
     } finally {
       setExporting(false)
+    }
+  }
+
+  // Delete field handlers
+  const openDeleteModal = (field) => {
+    setFieldToDelete(field)
+    setShowDeleteModal(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!fieldToDelete) return
+    
+    setDeleting(true)
+    try {
+      await fieldService.deleteField(fieldToDelete.id)
+      toast.success(`Field "${fieldToDelete.name}" deleted successfully`)
+      setShowDeleteModal(false)
+      setFieldToDelete(null)
+      await fetchFields()
+    } catch (error) {
+      console.error('Error deleting field:', error)
+      toast.error('Failed to delete field')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -237,7 +266,7 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
 
   return (
     <div className="space-y-4">
-      {/* Header with Buttons - Removed redundant Update Field button */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
@@ -252,7 +281,6 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          {/* Export CSV - Available to all */}
           <button
             onClick={handleExportCSV}
             disabled={exporting || filteredFields.length === 0}
@@ -262,7 +290,6 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
             {exporting ? 'Exporting...' : 'Export CSV'}
           </button>
           
-          {/* New Field - ONLY for Admins */}
           {isAdmin && (
             <Link
               to="/fields/create"
@@ -418,8 +445,8 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
                         </button>
                       )}
                     </div>
-                    </td>
-                  </tr>
+                  </td>
+                </tr>
               ) : (
                 paginatedFields.map((field) => (
                   <tr key={field.id} className="hover:bg-gray-50 transition">
@@ -466,29 +493,17 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-2">
-                        {/* Eye Icon - View & Update Field (This handles all updates) */}
                         <Link
                           to={`/fields/${field.id}`}
                           className="p-1.5 text-gray-400 hover:text-emerald-600 transition rounded-lg hover:bg-emerald-50"
-                          title="View & Update Field - Click to see full details and update stage, add observations"
+                          title="View & Update Field"
                         >
                           <Eye className="w-4 h-4" />
                         </Link>
                         
-                        {/* Delete - Only for Admins */}
                         {isAdmin && (
                           <button
-                            onClick={async () => {
-                              if (window.confirm(`Delete field "${field.name}"? This action cannot be undone.`)) {
-                                try {
-                                  await fieldService.deleteField(field.id)
-                                  await fetchFields()
-                                  toast.success('Field deleted successfully')
-                                } catch (error) {
-                                  toast.error('Failed to delete field')
-                                }
-                              }
-                            }}
+                            onClick={() => openDeleteModal(field)}
                             className="p-1.5 text-gray-400 hover:text-red-600 transition rounded-lg hover:bg-red-50"
                             title="Delete Field"
                           >
@@ -556,6 +571,59 @@ const FieldList = ({ initialFields, onFieldUpdate }) => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && fieldToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-800">Delete Field</h2>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setFieldToDelete(null)
+                }} 
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <p className="text-gray-600">
+                Are you sure you want to permanently delete field <span className="font-semibold text-gray-900">"{fieldToDelete.name}"</span>?
+              </p>
+              <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
+                ⚠️ This action cannot be undone. All observations and data associated with this field will be permanently removed.
+              </p>
+              
+              <div className="flex gap-3 pt-4">
+                <button 
+                  onClick={confirmDelete} 
+                  disabled={deleting}
+                  className="flex-1 bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 transition disabled:opacity-50"
+                >
+                  {deleting ? 'Deleting...' : 'Yes, Delete Field'}
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowDeleteModal(false)
+                    setFieldToDelete(null)
+                  }} 
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-300 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

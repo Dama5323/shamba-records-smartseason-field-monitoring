@@ -507,27 +507,47 @@ const LandingPage = () => {
           </div>
           
           {/* Divider */}
-          <div className="border-t border-gray-800 mt-8 pt-8">
-            <div className="text-center">
-              <p className="text-sm text-gray-500 mb-2">
-                Created for Shamba Records Software Engineer Internship Application
-              </p>
-              <p className="text-gray-500">Designed & Developed by</p>
-              <p className="text-green-500 font-medium text-lg">Damaris Chege</p>
-              <div className="flex items-center justify-center space-x-4 mt-2">
-                <a href="mailto:deenyashke@gmail.com" className="text-sm hover:text-green-400 transition">
-                  deenyashke@gmail.com
-                </a>
-                <span className="text-gray-600">|</span>
-                <a href="tel:+254708729553" className="text-sm hover:text-green-400 transition">
-                  +254 708 729 553
-                </a>
+          <footer className="bg-white border-t border-gray-200 py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                {/* Left - Copyright */}
+                <div className="text-center md:text-left">
+                  <p className="text-sm text-gray-500">
+                    © {new Date().getFullYear()} SmartSeason. All rights reserved.
+                  </p>
+                </div>
+                
+                {/* Center - Made with love */}
+                <div className="flex items-center gap-1 text-sm text-gray-500">
+                  <span>Made with</span>
+                  <Heart className="w-4 h-4 text-red-500 fill-current" />
+                  <span>by Damaris Chege</span>
+                </div>
+                
+                {/* Right - Contact */}
+                <div className="flex items-center gap-4">
+                  <a 
+                    href="mailto:deenyashke@gmail.com" 
+                    className="text-sm text-gray-500 hover:text-green-600 transition flex items-center gap-1"
+                  >
+                    <Mail className="w-3 h-3" />
+                    deenyashke@gmail.com
+                  </a>
+                  <span className="text-gray-300">|</span>
+                  <a 
+                    href="tel:+254708729553" 
+                    className="text-sm text-gray-500 hover:text-green-600 transition flex items-center gap-1"
+                  >
+                    <Phone className="w-3 h-3" />
+                    +254 708 729 553
+                  </a>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </footer>
+        </div>  
       </footer>
-    </div>
+    </div>    
   )
 }
 
